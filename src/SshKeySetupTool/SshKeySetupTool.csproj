@@ -5,6 +5,8 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <AssemblyTitle>SSHKEY</AssemblyTitle>
+    <Product>SSHKEY</Product>
     <ApplicationIcon>Assets\ssh-key-tool-icon.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
