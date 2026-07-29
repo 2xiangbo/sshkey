@@ -28,6 +28,8 @@ handlers.
   and OpenSSH states without restarting.
 - Chinese title: `SSHKEY   //   SSH密钥设置`.
 - English title: `SSHKEY   //   SSH Key Setup`.
+- Chinese primary action: `生成并写入服务器`; English primary action:
+  `Generate and Install`.
 - Existing service messages that originate outside the form remain unchanged;
   form-owned wrapper messages and validation presentation use the selected
   language.
