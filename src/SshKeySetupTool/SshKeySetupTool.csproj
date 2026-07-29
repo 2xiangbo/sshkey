@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <ApplicationIcon>Assets\ssh-key-tool-icon.ico</ApplicationIcon>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.2" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\ssh-key-tool-icon.ico"
+                      LogicalName="SshKeySetupTool.Assets.ssh-key-tool-icon.ico" />
+  </ItemGroup>
+</Project>
