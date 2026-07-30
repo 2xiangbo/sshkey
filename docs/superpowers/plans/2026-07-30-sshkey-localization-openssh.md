@@ -13,7 +13,7 @@
 - Default language is `中文`; choices are exactly `中文` and `EN`.
 - Chinese title is `SSHKEY   //   SSH密钥设置`; English title is `SSHKEY   //   SSH Key Setup`.
 - The Chinese primary action is `生成并写入服务器`; English primary action is `Generate and Install`.
-- Links target exactly `https://github.com/2xiangbo/sshkey` and `https://xxcode.com`.
+- Links target exactly `https://github.com/2xiangbo/sshkey` and `https://xxcodex.com`.
 - OpenSSH installation uses elevated Windows optional feature `OpenSSH.Client~~~~0.0.1.0`.
 - Do not rename solution, namespaces, or executable file.
 

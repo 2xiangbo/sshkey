@@ -65,7 +65,7 @@ left is used, in this order, for:
 
 1. A `2xiangbo/sshkey` `LinkLabel` opening
    `https://github.com/2xiangbo/sshkey`.
-2. An `XXCodex` `LinkLabel` opening `https://xxcode.com`.
+2. An `XXCodex` `LinkLabel` opening `https://xxcodex.com`.
 3. The narrow language selector immediately to the left of the primary button.
 4. The existing generation button.
 

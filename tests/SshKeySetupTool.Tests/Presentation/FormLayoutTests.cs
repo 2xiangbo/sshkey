@@ -36,7 +36,7 @@ public sealed class FormLayoutTests
             Assert.Equal(form.Text, headerTitle.Text);
             Assert.Equal("中文", language.SelectedItem);
             Assert.Equal("https://github.com/2xiangbo/sshkey", project.Tag);
-            Assert.Equal("https://xxcode.com", xxCodex.Tag);
+            Assert.Equal("https://xxcodex.com", xxCodex.Tag);
             Assert.Equal(FormBorderStyle.None, form.FormBorderStyle);
             Assert.Equal(42, titleBar.Height);
             Assert.Equal(Color.FromArgb(11, 17, 24), form.BackColor);

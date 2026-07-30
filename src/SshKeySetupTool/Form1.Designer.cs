@@ -351,7 +351,7 @@ partial class Form1
         xxCodexLinkLabel.Size = new Size(54, 15);
         xxCodexLinkLabel.TabIndex = 9;
         xxCodexLinkLabel.TabStop = true;
-        xxCodexLinkLabel.Tag = "https://xxcode.com";
+        xxCodexLinkLabel.Tag = "https://xxcodex.com";
         xxCodexLinkLabel.Text = "XXCodex";
         //
         // Form1
