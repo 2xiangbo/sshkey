@@ -7,6 +7,7 @@ public enum OpenSshClientStatus
 {
     Installed,
     Missing,
+    CheckFailed,
     InstallFailed,
     InstallCancelled
 }
@@ -36,19 +37,20 @@ public sealed class WindowsOpenSshClientManager : IOpenSshClientManager
         _runElevatedInstaller = runElevatedInstaller ?? throw new ArgumentNullException(nameof(runElevatedInstaller));
     }
 
-    public Task<OpenSshClientStatus> CheckAsync(CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        try
+    public Task<OpenSshClientStatus> CheckAsync(CancellationToken cancellationToken) =>
+        Task.Run(() =>
         {
-            _ = _resolveExecutables();
-            return Task.FromResult(OpenSshClientStatus.Installed);
-        }
-        catch (FileNotFoundException)
-        {
-            return Task.FromResult(OpenSshClientStatus.Missing);
-        }
-    }
+            cancellationToken.ThrowIfCancellationRequested();
+            try
+            {
+                _ = _resolveExecutables();
+                return OpenSshClientStatus.Installed;
+            }
+            catch (FileNotFoundException)
+            {
+                return OpenSshClientStatus.Missing;
+            }
+        }, cancellationToken);
 
     public async Task<OpenSshClientStatus> InstallAsync(CancellationToken cancellationToken)
     {

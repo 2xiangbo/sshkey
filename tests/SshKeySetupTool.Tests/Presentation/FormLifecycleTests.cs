@@ -84,6 +84,23 @@ public sealed class FormLifecycleTests
         });
     }
 
+    [Fact]
+    public void FailedInitialOpenSshCheck_DoesNotOfferInstallation()
+    {
+        RunInSta(() =>
+        {
+            using var form = new Form1(new ImmediateSetupService(), new FailingOpenSshManager());
+            form.ShowInTaskbar = false;
+            form.Show();
+            var openSsh = Find<Button>(form, "openSshButton");
+
+            PumpUntil(() => !openSsh.Text.StartsWith("检测 OpenSSH", StringComparison.Ordinal));
+
+            Assert.False(openSsh.Enabled);
+            Assert.Contains("检测失败", openSsh.Text);
+        });
+    }
+
     private static void PopulateRequiredFields(Form form)
     {
         Find<TextBox>(form, "hostTextBox").Text = "203.0.113.10";
@@ -194,5 +211,14 @@ public sealed class FormLifecycleTests
             CancellationToken cancellationToken) =>
             throw new Xunit.Sdk.XunitException(
                 "A process must not start when Windows OpenSSH is missing.");
+    }
+
+    private sealed class FailingOpenSshManager : IOpenSshClientManager
+    {
+        public Task<OpenSshClientStatus> CheckAsync(CancellationToken cancellationToken) =>
+            Task.FromException<OpenSshClientStatus>(new InvalidOperationException("check failed"));
+
+        public Task<OpenSshClientStatus> InstallAsync(CancellationToken cancellationToken) =>
+            throw new Xunit.Sdk.XunitException("Installation must not be offered after a check failure.");
     }
 }

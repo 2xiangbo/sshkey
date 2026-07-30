@@ -28,6 +28,7 @@ public sealed record UiText(
     string CheckingOpenSsh,
     string OpenSshInstalled,
     string InstallOpenSsh,
+    string OpenSshCheckFailed,
     string OpenSshInstallFailed,
     string OpenSshInstallCancelled);
 
@@ -56,6 +57,7 @@ public static class UiTextCatalog
             "Checking OpenSSH…",
             "✓ OpenSSH installed",
             "Install OpenSSH",
+            "OpenSSH check failed",
             "OpenSSH installation failed — retry",
             "OpenSSH installation was cancelled — retry" )
         : new UiText(
@@ -80,6 +82,7 @@ public static class UiTextCatalog
             "检测 OpenSSH…",
             "✓ OpenSSH 已安装",
             "一键安装 OpenSSH",
+            "OpenSSH 检测失败",
             "OpenSSH 安装失败，请重试",
             "OpenSSH 安装已取消，请重试");
 }

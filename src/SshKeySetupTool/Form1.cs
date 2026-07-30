@@ -274,6 +274,11 @@ public partial class Form1 : Form
             return;
         }
 
+        if (_openSshStatus is not (OpenSshClientStatus.Missing or OpenSshClientStatus.InstallFailed or OpenSshClientStatus.InstallCancelled))
+        {
+            return;
+        }
+
         _openSshOperationInProgress = true;
         RenderOpenSshState();
         try
@@ -312,7 +317,7 @@ public partial class Form1 : Form
         }
         catch
         {
-            _openSshStatus = OpenSshClientStatus.InstallFailed;
+            _openSshStatus = OpenSshClientStatus.CheckFailed;
         }
         finally
         {
@@ -342,6 +347,15 @@ public partial class Form1 : Form
             openSshButton.BackColor = SuccessColor;
             openSshButton.ForeColor = Color.FromArgb(4, 25, 34);
             openSshButton.Text = text.OpenSshInstalled;
+            return;
+        }
+
+        if (_openSshStatus == OpenSshClientStatus.CheckFailed)
+        {
+            openSshButton.Enabled = false;
+            openSshButton.BackColor = Color.FromArgb(38, 55, 71);
+            openSshButton.ForeColor = ErrorColor;
+            openSshButton.Text = text.OpenSshCheckFailed;
             return;
         }
 
