@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Windows.Forms;
 using SshKeySetupTool;
+using SshKeySetupTool.Presentation;
 
 namespace SshKeySetupTool.Tests.Presentation;
 
@@ -33,6 +34,13 @@ public sealed class FormLayoutTests
             var passwordInput = Find<Panel>(form, "passwordInputPanel");
             var privateKeyPathInput = Find<Panel>(form, "privateKeyPathInputPanel");
             var statusInput = Find<Panel>(form, "statusInputPanel");
+            var longestCompletionStatus = new[]
+            {
+                UiTextCatalog.For(UiLanguage.Chinese).CompletedCopied,
+                UiTextCatalog.For(UiLanguage.Chinese).CompletedNotCopied,
+                UiTextCatalog.For(UiLanguage.English).CompletedCopied,
+                UiTextCatalog.For(UiLanguage.English).CompletedNotCopied
+            }.MaxBy(text => text.Length)!;
 
             Assert.Equal(new Size(680, 520), form.ClientSize);
             Assert.Equal("SSHKEY   //   SSH密钥设置", form.Text);
@@ -47,7 +55,13 @@ public sealed class FormLayoutTests
             Assert.Equal(FlatStyle.Flat, minimize.FlatStyle);
             Assert.Equal(FlatStyle.Flat, close.FlatStyle);
             Assert.True(form.Height < 560);
-            Assert.False(status.Multiline);
+            Assert.True(status.Multiline);
+            Assert.True(status.Height >= status.Font.Height * 2);
+            Assert.True(TextRenderer.MeasureText(
+                longestCompletionStatus,
+                status.Font,
+                new Size(status.Width, int.MaxValue),
+                TextFormatFlags.WordBreak).Height <= status.Height);
             Assert.Equal(Color.FromArgb(14, 24, 34), host.BackColor);
             Assert.Equal(Color.FromArgb(14, 24, 34), connectionDetails.BackColor);
             Assert.Equal(hostInput.Top, portInput.Top);
@@ -65,7 +79,8 @@ public sealed class FormLayoutTests
             Assert.Equal(usernameInput.Width, passwordInput.Width);
             Assert.True(privateKeyPathInput.Top > usernameInput.Bottom);
             Assert.True(statusInput.Left > connectionDetailsLabel.Right);
-            Assert.True(Math.Abs(statusInput.Top + statusInput.Height / 2 - (connectionDetailsLabel.Top + connectionDetailsLabel.Height / 2)) <= 2);
+            Assert.True(statusInput.Top <= connectionDetailsLabel.Top);
+            Assert.True(statusInput.Bottom > connectionDetailsLabel.Bottom);
             Assert.True(connectionDetails.Top > statusInput.Bottom);
             Assert.Equal(FlatStyle.Flat, generate.FlatStyle);
             Assert.NotEqual(SystemColors.Control, form.BackColor);

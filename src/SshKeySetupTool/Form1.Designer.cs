@@ -267,10 +267,10 @@ partial class Form1
         statusTextBox.Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point);
         statusTextBox.ForeColor = primaryTextColor;
         statusTextBox.Location = new Point(9, 4);
-        statusTextBox.Multiline = false;
+        statusTextBox.Multiline = true;
         statusTextBox.Name = "statusTextBox";
         statusTextBox.ReadOnly = true;
-        statusTextBox.Size = new Size(392, 22);
+        statusTextBox.Size = new Size(392, 48);
         statusTextBox.TabIndex = 5;
         statusTextBox.TabStop = false;
         statusTextBox.Text = "\u51c6\u5907\u5c31\u7eea\u3002";
@@ -281,12 +281,12 @@ partial class Form1
         connectionDetailsTextBox.BorderStyle = BorderStyle.FixedSingle;
         connectionDetailsTextBox.Font = new Font("Consolas", 9.5F, FontStyle.Regular, GraphicsUnit.Point);
         connectionDetailsTextBox.ForeColor = primaryTextColor;
-        connectionDetailsTextBox.Location = new Point(20, 320);
+        connectionDetailsTextBox.Location = new Point(20, 350);
         connectionDetailsTextBox.Multiline = true;
         connectionDetailsTextBox.Name = "connectionDetailsTextBox";
         connectionDetailsTextBox.ReadOnly = true;
         connectionDetailsTextBox.ScrollBars = ScrollBars.Vertical;
-        connectionDetailsTextBox.Size = new Size(640, 118);
+        connectionDetailsTextBox.Size = new Size(640, 88);
         connectionDetailsTextBox.TabIndex = 6;
         connectionDetailsTextBox.TabStop = false;
         //
@@ -364,7 +364,7 @@ partial class Form1
         statusInputPanel.Location = new Point(250, 285);
         statusInputPanel.Name = "statusInputPanel";
         statusInputPanel.Padding = new Padding(1);
-        statusInputPanel.Size = new Size(410, 30);
+        statusInputPanel.Size = new Size(410, 56);
         statusInputPanel.TabIndex = 6;
         //
         // generateButton
