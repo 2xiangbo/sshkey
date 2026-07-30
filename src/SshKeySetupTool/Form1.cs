@@ -1,7 +1,9 @@
 using SshKeySetupTool.Domain;
+using SshKeySetupTool.Presentation;
 using SshKeySetupTool.Security;
 using SshKeySetupTool.Services;
 using SshKeySetupTool.Ssh;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace SshKeySetupTool;
@@ -15,11 +17,17 @@ public partial class Form1 : Form
     private static readonly Color ErrorColor = Color.FromArgb(255, 107, 122);
 
     private readonly IKeySetupService _keySetupService;
+    private readonly IOpenSshClientManager _openSshClientManager;
     private Icon? _applicationIcon;
     private CancellationTokenSource? _setupCancellation;
     private Task? _setupTask;
     private bool _closeRequested;
     private bool _allowClose;
+    private UiLanguage _language = UiLanguage.Chinese;
+    private OpenSshClientStatus? _openSshStatus;
+    private bool _openSshOperationInProgress = true;
+    private Func<UiText, string>? _statusTextFactory;
+    private Color _statusColor = Color.FromArgb(127, 149, 163);
 
     public Form1()
         : this(null, useDefaultService: true)
@@ -27,11 +35,21 @@ public partial class Form1 : Form
     }
 
     internal Form1(IKeySetupService keySetupService)
-        : this(keySetupService, useDefaultService: false)
+        : this(keySetupService, useDefaultService: false, null)
     {
     }
 
-    private Form1(IKeySetupService? keySetupService, bool useDefaultService)
+    internal Form1(
+        IKeySetupService keySetupService,
+        IOpenSshClientManager openSshClientManager)
+        : this(keySetupService, useDefaultService: false, openSshClientManager)
+    {
+    }
+
+    private Form1(
+        IKeySetupService? keySetupService,
+        bool useDefaultService,
+        IOpenSshClientManager? openSshClientManager = null)
     {
         InitializeComponent();
         _applicationIcon = AppIcon.Load();
@@ -44,6 +62,9 @@ public partial class Form1 : Form
                 new OpenSshKeyMaterialFactory(),
                 new WindowsOpenSshSetupClient(ConfirmHostKey))
             : keySetupService ?? throw new ArgumentNullException(nameof(keySetupService));
+        _openSshClientManager = openSshClientManager ?? new WindowsOpenSshClientManager();
+        languageComboBox.SelectedItem = UiTextCatalog.For(_language).LanguageChoice;
+        ApplyLanguage();
     }
 
     private async void generateButton_Click(object? sender, EventArgs e)
@@ -77,7 +98,7 @@ public partial class Form1 : Form
     {
         generateButton.Enabled = false;
         connectionDetailsTextBox.Clear();
-        SetStatus("正在生成本地密钥并连接服务器...", WorkingColor);
+        SetLocalizedStatus(text => text.Working, WorkingColor);
 
         try
         {
@@ -87,10 +108,10 @@ public partial class Form1 : Form
             {
                 var connectionDetails = CodexConnectionDetails.Format(request, result.PrivateKeyPath!);
                 connectionDetailsTextBox.Text = connectionDetails;
-                SetStatus(
+                SetLocalizedStatus(
                     TryCopyToClipboard(connectionDetails)
-                        ? "\u5b8c\u6210\uff0cCodex \u8fde\u63a5\u4fe1\u606f\u5df2\u663e\u793a\u5728\u4e0b\u65b9\u5e76\u590d\u5236\u5230\u526a\u8d34\u677f\u3002"
-                        : "\u5b8c\u6210\uff0cCodex \u8fde\u63a5\u4fe1\u606f\u5df2\u663e\u793a\u5728\u4e0b\u65b9\uff0c\u8bf7\u624b\u52a8\u590d\u5236\u3002",
+                        ? text => text.CompletedCopied
+                        : text => text.CompletedNotCopied,
                     SuccessColor);
             }
             else
@@ -100,11 +121,11 @@ public partial class Form1 : Form
         }
         catch (OperationCanceledException)
         {
-            SetStatus("操作已取消。", Color.FromArgb(127, 149, 163));
+            SetLocalizedStatus(text => text.Cancelled, Color.FromArgb(127, 149, 163));
         }
         catch (Exception exception)
         {
-            SetStatus($"失败：{exception.Message}", ErrorColor);
+            SetLocalizedStatus(text => text.FailedPrefix + exception.Message, ErrorColor);
         }
         finally
         {
@@ -133,6 +154,11 @@ public partial class Form1 : Form
         minimizeButton.Click += minimizeButton_Click;
         closeButton.Click += closeButton_Click;
         FormClosing += Form1_FormClosing;
+        Shown += Form1_Shown;
+        languageComboBox.SelectedIndexChanged += languageComboBox_SelectedIndexChanged;
+        openSshButton.Click += openSshButton_Click;
+        projectLinkLabel.LinkClicked += externalLinkLabel_LinkClicked;
+        xxCodexLinkLabel.LinkClicked += externalLinkLabel_LinkClicked;
     }
 
     private void titleBar_MouseDown(object? sender, MouseEventArgs e)
@@ -187,8 +213,165 @@ public partial class Form1 : Form
 
     private void SetStatus(string text, Color color)
     {
+        _statusTextFactory = null;
+        _statusColor = color;
         statusTextBox.Text = text;
         statusTextBox.ForeColor = color;
+    }
+
+    private void SetLocalizedStatus(Func<UiText, string> textFactory, Color color)
+    {
+        _statusTextFactory = textFactory;
+        _statusColor = color;
+        statusTextBox.Text = textFactory(CurrentText);
+        statusTextBox.ForeColor = color;
+    }
+
+    private UiText CurrentText => UiTextCatalog.For(_language);
+
+    private void ApplyLanguage()
+    {
+        var text = CurrentText;
+        Text = text.Title;
+        headerTitleLabel.Text = text.Title;
+        hostLabel.Text = text.Host;
+        portLabel.Text = text.Port;
+        usernameLabel.Text = text.Username;
+        passwordLabel.Text = text.Password;
+        privateKeyPathLabel.Text = text.PrivateKeyPath;
+        statusLabel.Text = text.Status;
+        connectionDetailsLabel.Text = text.ConnectionDetails;
+        generateButton.Text = text.GenerateAndInstall;
+
+        if (_statusTextFactory is null)
+        {
+            SetLocalizedStatus(current => current.Ready, Color.FromArgb(127, 149, 163));
+        }
+        else
+        {
+            statusTextBox.Text = _statusTextFactory(text);
+            statusTextBox.ForeColor = _statusColor;
+        }
+
+        RenderOpenSshState();
+    }
+
+    private async void Form1_Shown(object? sender, EventArgs e) =>
+        await RefreshOpenSshStatusAsync();
+
+    private void languageComboBox_SelectedIndexChanged(object? sender, EventArgs e)
+    {
+        _language = string.Equals(languageComboBox.SelectedItem as string, "EN", StringComparison.Ordinal)
+            ? UiLanguage.English
+            : UiLanguage.Chinese;
+        ApplyLanguage();
+    }
+
+    private async void openSshButton_Click(object? sender, EventArgs e)
+    {
+        if (_openSshOperationInProgress || _openSshStatus == OpenSshClientStatus.Installed)
+        {
+            return;
+        }
+
+        _openSshOperationInProgress = true;
+        RenderOpenSshState();
+        try
+        {
+            _openSshStatus = await _openSshClientManager.InstallAsync(CancellationToken.None);
+        }
+        catch (OperationCanceledException)
+        {
+            _openSshStatus = OpenSshClientStatus.InstallCancelled;
+        }
+        catch
+        {
+            _openSshStatus = OpenSshClientStatus.InstallFailed;
+        }
+        finally
+        {
+            _openSshOperationInProgress = false;
+            if (!IsDisposed)
+            {
+                RenderOpenSshState();
+            }
+        }
+    }
+
+    private async Task RefreshOpenSshStatusAsync()
+    {
+        _openSshOperationInProgress = true;
+        RenderOpenSshState();
+        try
+        {
+            _openSshStatus = await _openSshClientManager.CheckAsync(CancellationToken.None);
+        }
+        catch (OperationCanceledException)
+        {
+            _openSshStatus = OpenSshClientStatus.InstallCancelled;
+        }
+        catch
+        {
+            _openSshStatus = OpenSshClientStatus.InstallFailed;
+        }
+        finally
+        {
+            _openSshOperationInProgress = false;
+            if (!IsDisposed)
+            {
+                RenderOpenSshState();
+            }
+        }
+    }
+
+    private void RenderOpenSshState()
+    {
+        var text = CurrentText;
+        if (_openSshOperationInProgress)
+        {
+            openSshButton.Enabled = false;
+            openSshButton.BackColor = Color.FromArgb(38, 55, 71);
+            openSshButton.ForeColor = Color.FromArgb(233, 245, 250);
+            openSshButton.Text = text.CheckingOpenSsh;
+            return;
+        }
+
+        if (_openSshStatus == OpenSshClientStatus.Installed)
+        {
+            openSshButton.Enabled = false;
+            openSshButton.BackColor = SuccessColor;
+            openSshButton.ForeColor = Color.FromArgb(4, 25, 34);
+            openSshButton.Text = text.OpenSshInstalled;
+            return;
+        }
+
+        openSshButton.Enabled = true;
+        openSshButton.ForeColor = Color.FromArgb(4, 25, 34);
+        openSshButton.BackColor = _openSshStatus == OpenSshClientStatus.Missing
+            ? WorkingColor
+            : ErrorColor;
+        openSshButton.Text = _openSshStatus == OpenSshClientStatus.InstallCancelled
+            ? text.OpenSshInstallCancelled
+            : _openSshStatus == OpenSshClientStatus.InstallFailed
+                ? text.OpenSshInstallFailed
+                : text.InstallOpenSsh;
+    }
+
+    private void externalLinkLabel_LinkClicked(object? sender, LinkLabelLinkClickedEventArgs e)
+    {
+        if (sender is not LinkLabel { Tag: string url })
+        {
+            return;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+        }
+        catch (Exception exception)
+        {
+            SetLocalizedStatus(text => text.FailedPrefix + exception.Message, ErrorColor);
+        }
     }
 
     private Domain.SetupRequest BuildRequest() => SetupFormInput.BuildRequest(
@@ -218,7 +401,8 @@ public partial class Form1 : Form
             return (bool)Invoke(new Func<bool>(() => ConfirmHostKey(host, fingerprint)));
         }
 
-        var message = $"首次连接服务器 {host}。\r\n\r\n服务器 SHA-256 密钥指纹：\r\n{fingerprint}\r\n\r\n是否仅在本次操作中信任此服务器？";
-        return MessageBox.Show(this, message, "确认服务器", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes;
+        var text = CurrentText;
+        var message = string.Format(text.ConfirmServerMessageFormat, host, fingerprint);
+        return MessageBox.Show(this, message, text.ConfirmServerTitle, MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes;
     }
 }

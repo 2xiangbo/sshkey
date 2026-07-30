@@ -44,6 +44,10 @@ partial class Form1
         statusTextBox = new TextBox();
         connectionDetailsTextBox = new TextBox();
         generateButton = new Button();
+        languageComboBox = new ComboBox();
+        openSshButton = new Button();
+        projectLinkLabel = new LinkLabel();
+        xxCodexLinkLabel = new LinkLabel();
         var inputBackColor = Color.FromArgb(14, 24, 34);
         var primaryTextColor = Color.FromArgb(233, 245, 250);
         var secondaryTextColor = Color.FromArgb(127, 149, 163);
@@ -72,7 +76,7 @@ partial class Form1
         headerTitleLabel.Name = "headerTitleLabel";
         headerTitleLabel.Size = new Size(184, 19);
         headerTitleLabel.TabIndex = 0;
-        headerTitleLabel.Text = "CODEX  //  SSH \u5bc6\u94a5\u8bbe\u7f6e";
+        headerTitleLabel.Text = "SSHKEY   //   SSH\u5bc6\u94a5\u8bbe\u7f6e";
         //
         // minimizeButton
         //
@@ -130,7 +134,7 @@ partial class Form1
         portLabel.AutoSize = true;
         portLabel.Font = new Font("Segoe UI", 8.5F, FontStyle.Regular, GraphicsUnit.Point);
         portLabel.ForeColor = secondaryTextColor;
-        portLabel.Location = new Point(490, 58);
+        portLabel.Location = new Point(278, 58);
         portLabel.Name = "portLabel";
         portLabel.Size = new Size(28, 15);
         portLabel.TabIndex = 3;
@@ -199,7 +203,7 @@ partial class Form1
         hostTextBox.ForeColor = primaryTextColor;
         hostTextBox.Location = new Point(20, 76);
         hostTextBox.Name = "hostTextBox";
-        hostTextBox.Size = new Size(456, 28);
+        hostTextBox.Size = new Size(244, 28);
         hostTextBox.TabIndex = 0;
         //
         // portTextBox
@@ -208,9 +212,9 @@ partial class Form1
         portTextBox.BorderStyle = BorderStyle.FixedSingle;
         portTextBox.Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point);
         portTextBox.ForeColor = primaryTextColor;
-        portTextBox.Location = new Point(490, 76);
+        portTextBox.Location = new Point(278, 76);
         portTextBox.Name = "portTextBox";
-        portTextBox.Size = new Size(170, 28);
+        portTextBox.Size = new Size(72, 28);
         portTextBox.TabIndex = 1;
         portTextBox.Text = "22";
         //
@@ -297,6 +301,59 @@ partial class Form1
         generateButton.UseVisualStyleBackColor = false;
         generateButton.Click += new EventHandler(generateButton_Click);
         //
+        // languageComboBox
+        //
+        languageComboBox.BackColor = inputBackColor;
+        languageComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+        languageComboBox.FlatStyle = FlatStyle.Flat;
+        languageComboBox.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        languageComboBox.ForeColor = primaryTextColor;
+        languageComboBox.FormattingEnabled = true;
+        languageComboBox.Items.AddRange(new object[] { "\u4e2d\u6587", "EN" });
+        languageComboBox.Location = new Point(356, 465);
+        languageComboBox.Name = "languageComboBox";
+        languageComboBox.Size = new Size(70, 25);
+        languageComboBox.TabIndex = 7;
+        //
+        // openSshButton
+        //
+        openSshButton.BackColor = Color.FromArgb(38, 55, 71);
+        openSshButton.FlatAppearance.BorderColor = neutralBorderColor;
+        openSshButton.FlatStyle = FlatStyle.Flat;
+        openSshButton.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point);
+        openSshButton.ForeColor = primaryTextColor;
+        openSshButton.Location = new Point(364, 76);
+        openSshButton.Name = "openSshButton";
+        openSshButton.Size = new Size(296, 28);
+        openSshButton.TabIndex = 2;
+        openSshButton.UseVisualStyleBackColor = false;
+        //
+        // projectLinkLabel
+        //
+        projectLinkLabel.AutoSize = true;
+        projectLinkLabel.Font = new Font("Segoe UI", 8.5F, FontStyle.Regular, GraphicsUnit.Point);
+        projectLinkLabel.LinkColor = cyanColor;
+        projectLinkLabel.Location = new Point(20, 470);
+        projectLinkLabel.Name = "projectLinkLabel";
+        projectLinkLabel.Size = new Size(103, 15);
+        projectLinkLabel.TabIndex = 8;
+        projectLinkLabel.TabStop = true;
+        projectLinkLabel.Tag = "https://github.com/2xiangbo/sshkey";
+        projectLinkLabel.Text = "2xiangbo/sshkey";
+        //
+        // xxCodexLinkLabel
+        //
+        xxCodexLinkLabel.AutoSize = true;
+        xxCodexLinkLabel.Font = new Font("Segoe UI", 8.5F, FontStyle.Regular, GraphicsUnit.Point);
+        xxCodexLinkLabel.LinkColor = cyanColor;
+        xxCodexLinkLabel.Location = new Point(145, 470);
+        xxCodexLinkLabel.Name = "xxCodexLinkLabel";
+        xxCodexLinkLabel.Size = new Size(54, 15);
+        xxCodexLinkLabel.TabIndex = 9;
+        xxCodexLinkLabel.TabStop = true;
+        xxCodexLinkLabel.Tag = "https://xxcode.com";
+        xxCodexLinkLabel.Text = "XXCodex";
+        //
         // Form1
         //
         AcceptButton = generateButton;
@@ -304,6 +361,10 @@ partial class Form1
         AutoScaleMode = AutoScaleMode.None;
         BackColor = Color.FromArgb(11, 17, 24);
         ClientSize = new Size(680, 520);
+        Controls.Add(xxCodexLinkLabel);
+        Controls.Add(projectLinkLabel);
+        Controls.Add(openSshButton);
+        Controls.Add(languageComboBox);
         Controls.Add(generateButton);
         Controls.Add(connectionDetailsTextBox);
         Controls.Add(statusTextBox);
@@ -329,7 +390,7 @@ partial class Form1
         Name = "Form1";
         Padding = new Padding(1);
         StartPosition = FormStartPosition.CenterScreen;
-        Text = "CODEX  //  SSH \u5bc6\u94a5\u8bbe\u7f6e";
+        Text = "SSHKEY   //   SSH\u5bc6\u94a5\u8bbe\u7f6e";
         titleBarPanel.ResumeLayout(false);
         titleBarPanel.PerformLayout();
         ResumeLayout(false);
@@ -358,4 +419,8 @@ partial class Form1
     private TextBox statusTextBox;
     private TextBox connectionDetailsTextBox;
     private Button generateButton;
+    private ComboBox languageComboBox;
+    private Button openSshButton;
+    private LinkLabel projectLinkLabel;
+    private LinkLabel xxCodexLinkLabel;
 }

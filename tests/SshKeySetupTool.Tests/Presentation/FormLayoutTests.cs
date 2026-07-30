@@ -25,8 +25,18 @@ public sealed class FormLayoutTests
             var titleBar = Find<Panel>(form, "titleBarPanel");
             var minimize = Find<Button>(form, "minimizeButton");
             var close = Find<Button>(form, "closeButton");
+            var headerTitle = Find<Label>(form, "headerTitleLabel");
+            var language = Find<ComboBox>(form, "languageComboBox");
+            var openSsh = Find<Button>(form, "openSshButton");
+            var project = Find<LinkLabel>(form, "projectLinkLabel");
+            var xxCodex = Find<LinkLabel>(form, "xxCodexLinkLabel");
 
             Assert.Equal(new Size(680, 520), form.ClientSize);
+            Assert.Equal("SSHKEY   //   SSH密钥设置", form.Text);
+            Assert.Equal(form.Text, headerTitle.Text);
+            Assert.Equal("中文", language.SelectedItem);
+            Assert.Equal("https://github.com/2xiangbo/sshkey", project.Tag);
+            Assert.Equal("https://xxcode.com", xxCodex.Tag);
             Assert.Equal(FormBorderStyle.None, form.FormBorderStyle);
             Assert.Equal(42, titleBar.Height);
             Assert.Equal(Color.FromArgb(11, 17, 24), form.BackColor);
@@ -39,6 +49,9 @@ public sealed class FormLayoutTests
             Assert.Equal(Color.FromArgb(14, 24, 34), connectionDetails.BackColor);
             Assert.Equal(host.Top, port.Top);
             Assert.True(host.Left < port.Left);
+            Assert.True(host.Right < port.Left);
+            Assert.True(port.Right < openSsh.Left);
+            Assert.True(openSsh.Right <= form.ClientSize.Width - 20);
             Assert.Equal(username.Top, password.Top);
             Assert.True(username.Left < password.Left);
             Assert.True(privateKeyPath.Top > username.Bottom);
@@ -46,6 +59,12 @@ public sealed class FormLayoutTests
             Assert.True(connectionDetails.Top > status.Bottom);
             Assert.Equal(FlatStyle.Flat, generate.FlatStyle);
             Assert.NotEqual(SystemColors.Control, form.BackColor);
+
+            language.SelectedItem = "EN";
+
+            Assert.Equal("SSHKEY   //   SSH Key Setup", form.Text);
+            Assert.Equal(form.Text, headerTitle.Text);
+            Assert.Equal("Generate and Install", generate.Text);
         });
     }
 
