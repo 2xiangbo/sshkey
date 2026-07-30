@@ -43,6 +43,13 @@ partial class Form1
         privateKeyPathTextBox = new TextBox();
         statusTextBox = new TextBox();
         connectionDetailsTextBox = new TextBox();
+        hostInputPanel = new Panel();
+        portInputPanel = new Panel();
+        openSshInputPanel = new Panel();
+        usernameInputPanel = new Panel();
+        passwordInputPanel = new Panel();
+        privateKeyPathInputPanel = new Panel();
+        statusInputPanel = new Panel();
         generateButton = new Button();
         languageComboBox = new ComboBox();
         openSshButton = new Button();
@@ -134,7 +141,7 @@ partial class Form1
         portLabel.AutoSize = true;
         portLabel.Font = new Font("Segoe UI", 8.5F, FontStyle.Regular, GraphicsUnit.Point);
         portLabel.ForeColor = secondaryTextColor;
-        portLabel.Location = new Point(278, 58);
+        portLabel.Location = new Point(336, 58);
         portLabel.Name = "portLabel";
         portLabel.Size = new Size(28, 15);
         portLabel.TabIndex = 3;
@@ -183,6 +190,7 @@ partial class Form1
         statusLabel.Size = new Size(28, 15);
         statusLabel.TabIndex = 7;
         statusLabel.Text = "\u72b6\u6001";
+        statusLabel.Visible = false;
         //
         // connectionDetailsLabel
         //
@@ -198,71 +206,71 @@ partial class Form1
         // hostTextBox
         //
         hostTextBox.BackColor = inputBackColor;
-        hostTextBox.BorderStyle = BorderStyle.FixedSingle;
+        hostTextBox.BorderStyle = BorderStyle.None;
         hostTextBox.Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point);
         hostTextBox.ForeColor = primaryTextColor;
-        hostTextBox.Location = new Point(20, 76);
+        hostTextBox.Location = new Point(9, 5);
         hostTextBox.Name = "hostTextBox";
-        hostTextBox.Size = new Size(244, 28);
+        hostTextBox.Size = new Size(284, 22);
         hostTextBox.TabIndex = 0;
         //
         // portTextBox
         //
         portTextBox.BackColor = inputBackColor;
-        portTextBox.BorderStyle = BorderStyle.FixedSingle;
+        portTextBox.BorderStyle = BorderStyle.None;
         portTextBox.Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point);
         portTextBox.ForeColor = primaryTextColor;
-        portTextBox.Location = new Point(278, 76);
+        portTextBox.Location = new Point(9, 5);
         portTextBox.Name = "portTextBox";
-        portTextBox.Size = new Size(72, 28);
+        portTextBox.Size = new Size(56, 22);
         portTextBox.TabIndex = 1;
         portTextBox.Text = "22";
         //
         // usernameTextBox
         //
         usernameTextBox.BackColor = inputBackColor;
-        usernameTextBox.BorderStyle = BorderStyle.FixedSingle;
+        usernameTextBox.BorderStyle = BorderStyle.None;
         usernameTextBox.Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point);
         usernameTextBox.ForeColor = primaryTextColor;
-        usernameTextBox.Location = new Point(20, 132);
+        usernameTextBox.Location = new Point(9, 5);
         usernameTextBox.Name = "usernameTextBox";
-        usernameTextBox.Size = new Size(313, 28);
+        usernameTextBox.Size = new Size(293, 22);
         usernameTextBox.TabIndex = 2;
         //
         // passwordTextBox
         //
         passwordTextBox.BackColor = inputBackColor;
-        passwordTextBox.BorderStyle = BorderStyle.FixedSingle;
+        passwordTextBox.BorderStyle = BorderStyle.None;
         passwordTextBox.Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point);
         passwordTextBox.ForeColor = primaryTextColor;
-        passwordTextBox.Location = new Point(347, 132);
+        passwordTextBox.Location = new Point(9, 5);
         passwordTextBox.Name = "passwordTextBox";
-        passwordTextBox.Size = new Size(313, 28);
+        passwordTextBox.Size = new Size(293, 22);
         passwordTextBox.TabIndex = 3;
         passwordTextBox.UseSystemPasswordChar = true;
         //
         // privateKeyPathTextBox
         //
         privateKeyPathTextBox.BackColor = inputBackColor;
-        privateKeyPathTextBox.BorderStyle = BorderStyle.FixedSingle;
+        privateKeyPathTextBox.BorderStyle = BorderStyle.None;
         privateKeyPathTextBox.Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point);
         privateKeyPathTextBox.ForeColor = primaryTextColor;
-        privateKeyPathTextBox.Location = new Point(20, 188);
+        privateKeyPathTextBox.Location = new Point(9, 5);
         privateKeyPathTextBox.Name = "privateKeyPathTextBox";
-        privateKeyPathTextBox.Size = new Size(640, 28);
+        privateKeyPathTextBox.Size = new Size(620, 22);
         privateKeyPathTextBox.TabIndex = 4;
         //
         // statusTextBox
         //
         statusTextBox.BackColor = inputBackColor;
-        statusTextBox.BorderStyle = BorderStyle.FixedSingle;
+        statusTextBox.BorderStyle = BorderStyle.None;
         statusTextBox.Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point);
         statusTextBox.ForeColor = primaryTextColor;
-        statusTextBox.Location = new Point(20, 244);
+        statusTextBox.Location = new Point(9, 4);
         statusTextBox.Multiline = false;
         statusTextBox.Name = "statusTextBox";
         statusTextBox.ReadOnly = true;
-        statusTextBox.Size = new Size(640, 30);
+        statusTextBox.Size = new Size(487, 22);
         statusTextBox.TabIndex = 5;
         statusTextBox.TabStop = false;
         statusTextBox.Text = "\u51c6\u5907\u5c31\u7eea\u3002";
@@ -273,14 +281,91 @@ partial class Form1
         connectionDetailsTextBox.BorderStyle = BorderStyle.FixedSingle;
         connectionDetailsTextBox.Font = new Font("Consolas", 9.5F, FontStyle.Regular, GraphicsUnit.Point);
         connectionDetailsTextBox.ForeColor = primaryTextColor;
-        connectionDetailsTextBox.Location = new Point(20, 306);
+        connectionDetailsTextBox.Location = new Point(20, 320);
         connectionDetailsTextBox.Multiline = true;
         connectionDetailsTextBox.Name = "connectionDetailsTextBox";
         connectionDetailsTextBox.ReadOnly = true;
         connectionDetailsTextBox.ScrollBars = ScrollBars.Vertical;
-        connectionDetailsTextBox.Size = new Size(640, 132);
+        connectionDetailsTextBox.Size = new Size(640, 118);
         connectionDetailsTextBox.TabIndex = 6;
         connectionDetailsTextBox.TabStop = false;
+        //
+        // hostInputPanel
+        //
+        hostInputPanel.BackColor = inputBackColor;
+        hostInputPanel.BorderStyle = BorderStyle.FixedSingle;
+        hostInputPanel.Controls.Add(hostTextBox);
+        hostInputPanel.Location = new Point(20, 76);
+        hostInputPanel.Name = "hostInputPanel";
+        hostInputPanel.Padding = new Padding(1);
+        hostInputPanel.Size = new Size(302, 32);
+        hostInputPanel.TabIndex = 0;
+        //
+        // portInputPanel
+        //
+        portInputPanel.BackColor = inputBackColor;
+        portInputPanel.BorderStyle = BorderStyle.FixedSingle;
+        portInputPanel.Controls.Add(portTextBox);
+        portInputPanel.Location = new Point(336, 76);
+        portInputPanel.Name = "portInputPanel";
+        portInputPanel.Padding = new Padding(1);
+        portInputPanel.Size = new Size(76, 32);
+        portInputPanel.TabIndex = 1;
+        //
+        // openSshInputPanel
+        //
+        openSshInputPanel.BackColor = inputBackColor;
+        openSshInputPanel.BorderStyle = BorderStyle.FixedSingle;
+        openSshInputPanel.Controls.Add(openSshButton);
+        openSshInputPanel.Location = new Point(426, 76);
+        openSshInputPanel.Name = "openSshInputPanel";
+        openSshInputPanel.Padding = new Padding(1);
+        openSshInputPanel.Size = new Size(234, 32);
+        openSshInputPanel.TabIndex = 2;
+        //
+        // usernameInputPanel
+        //
+        usernameInputPanel.BackColor = inputBackColor;
+        usernameInputPanel.BorderStyle = BorderStyle.FixedSingle;
+        usernameInputPanel.Controls.Add(usernameTextBox);
+        usernameInputPanel.Location = new Point(20, 132);
+        usernameInputPanel.Name = "usernameInputPanel";
+        usernameInputPanel.Padding = new Padding(1);
+        usernameInputPanel.Size = new Size(313, 32);
+        usernameInputPanel.TabIndex = 3;
+        //
+        // passwordInputPanel
+        //
+        passwordInputPanel.BackColor = inputBackColor;
+        passwordInputPanel.BorderStyle = BorderStyle.FixedSingle;
+        passwordInputPanel.Controls.Add(passwordTextBox);
+        passwordInputPanel.Location = new Point(347, 132);
+        passwordInputPanel.Name = "passwordInputPanel";
+        passwordInputPanel.Padding = new Padding(1);
+        passwordInputPanel.Size = new Size(313, 32);
+        passwordInputPanel.TabIndex = 4;
+        //
+        // privateKeyPathInputPanel
+        //
+        privateKeyPathInputPanel.BackColor = inputBackColor;
+        privateKeyPathInputPanel.BorderStyle = BorderStyle.FixedSingle;
+        privateKeyPathInputPanel.Controls.Add(privateKeyPathTextBox);
+        privateKeyPathInputPanel.Location = new Point(20, 188);
+        privateKeyPathInputPanel.Name = "privateKeyPathInputPanel";
+        privateKeyPathInputPanel.Padding = new Padding(1);
+        privateKeyPathInputPanel.Size = new Size(640, 32);
+        privateKeyPathInputPanel.TabIndex = 5;
+        //
+        // statusInputPanel
+        //
+        statusInputPanel.BackColor = inputBackColor;
+        statusInputPanel.BorderStyle = BorderStyle.FixedSingle;
+        statusInputPanel.Controls.Add(statusTextBox);
+        statusInputPanel.Location = new Point(155, 285);
+        statusInputPanel.Name = "statusInputPanel";
+        statusInputPanel.Padding = new Padding(1);
+        statusInputPanel.Size = new Size(505, 30);
+        statusInputPanel.TabIndex = 6;
         //
         // generateButton
         //
@@ -322,9 +407,9 @@ partial class Form1
         openSshButton.FlatStyle = FlatStyle.Flat;
         openSshButton.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point);
         openSshButton.ForeColor = primaryTextColor;
-        openSshButton.Location = new Point(364, 76);
+        openSshButton.Location = new Point(1, 1);
         openSshButton.Name = "openSshButton";
-        openSshButton.Size = new Size(296, 28);
+        openSshButton.Size = new Size(232, 30);
         openSshButton.TabIndex = 2;
         openSshButton.UseVisualStyleBackColor = false;
         //
@@ -363,16 +448,16 @@ partial class Form1
         ClientSize = new Size(680, 520);
         Controls.Add(xxCodexLinkLabel);
         Controls.Add(projectLinkLabel);
-        Controls.Add(openSshButton);
         Controls.Add(languageComboBox);
         Controls.Add(generateButton);
         Controls.Add(connectionDetailsTextBox);
-        Controls.Add(statusTextBox);
-        Controls.Add(privateKeyPathTextBox);
-        Controls.Add(passwordTextBox);
-        Controls.Add(usernameTextBox);
-        Controls.Add(portTextBox);
-        Controls.Add(hostTextBox);
+        Controls.Add(statusInputPanel);
+        Controls.Add(privateKeyPathInputPanel);
+        Controls.Add(passwordInputPanel);
+        Controls.Add(usernameInputPanel);
+        Controls.Add(openSshInputPanel);
+        Controls.Add(portInputPanel);
+        Controls.Add(hostInputPanel);
         Controls.Add(connectionDetailsLabel);
         Controls.Add(statusLabel);
         Controls.Add(privateKeyPathLabel);
@@ -418,6 +503,13 @@ partial class Form1
     private TextBox privateKeyPathTextBox;
     private TextBox statusTextBox;
     private TextBox connectionDetailsTextBox;
+    private Panel hostInputPanel;
+    private Panel portInputPanel;
+    private Panel openSshInputPanel;
+    private Panel usernameInputPanel;
+    private Panel passwordInputPanel;
+    private Panel privateKeyPathInputPanel;
+    private Panel statusInputPanel;
     private Button generateButton;
     private ComboBox languageComboBox;
     private Button openSshButton;
