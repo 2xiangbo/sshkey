@@ -75,6 +75,7 @@ public sealed class FormLayoutTests
             Assert.Equal("SSHKEY   //   SSH Key Setup", form.Text);
             Assert.Equal(form.Text, headerTitle.Text);
             Assert.Equal("Generate and Install", generate.Text);
+            Assert.True(statusInput.Left > connectionDetailsLabel.Right);
         });
     }
 

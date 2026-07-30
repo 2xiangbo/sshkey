@@ -270,7 +270,7 @@ partial class Form1
         statusTextBox.Multiline = false;
         statusTextBox.Name = "statusTextBox";
         statusTextBox.ReadOnly = true;
-        statusTextBox.Size = new Size(487, 22);
+        statusTextBox.Size = new Size(392, 22);
         statusTextBox.TabIndex = 5;
         statusTextBox.TabStop = false;
         statusTextBox.Text = "\u51c6\u5907\u5c31\u7eea\u3002";
@@ -361,10 +361,10 @@ partial class Form1
         statusInputPanel.BackColor = inputBackColor;
         statusInputPanel.BorderStyle = BorderStyle.FixedSingle;
         statusInputPanel.Controls.Add(statusTextBox);
-        statusInputPanel.Location = new Point(155, 285);
+        statusInputPanel.Location = new Point(250, 285);
         statusInputPanel.Name = "statusInputPanel";
         statusInputPanel.Padding = new Padding(1);
-        statusInputPanel.Size = new Size(505, 30);
+        statusInputPanel.Size = new Size(410, 30);
         statusInputPanel.TabIndex = 6;
         //
         // generateButton
