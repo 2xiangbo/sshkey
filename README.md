@@ -22,6 +22,13 @@ It verifies the server fingerprint, creates an Ed25519 key pair, installs the
 public key, validates key-based authentication, and generates ready-to-copy SSH
 connection details.
 
+When the effective server setting is `PubkeyAuthentication no`, SSHKEY offers
+an explicit repair confirmation only for the `root` account. After consent it
+enables public-key authentication, validates `sshd`, reloads SSH, and rolls the
+change back if key installation or verification fails. Password authentication
+and `PermitRootLogin` are not changed; non-root accounts receive an
+administrator-required result instead of an automatic mutation.
+
 ### Features
 
 - Compact Windows desktop interface with Chinese and English support
@@ -53,8 +60,11 @@ Aider, OpenCode, Qwen Code, Kiro, Zed, and other SSH-capable AI coding tools.
    administrator prompt.
 3. Enter the server IP, SSH port, username, password, and private-key path.
 4. Confirm the server fingerprint.
-5. Select **Generate and Install**.
-6. Copy the generated connection details into your AI coding tool.
+5. If the server reports `PubkeyAuthentication no` and the username is `root`,
+   review the repair prompt and select **OK** to continue, or **Cancel** to
+   leave the server unchanged.
+6. Select **Generate and Install**.
+7. Copy the generated connection details into your AI coding tool.
 
 The password is used only for the initial SSH connection and is cleared from
 the window after the operation. It is not saved to disk.
@@ -75,6 +85,11 @@ The standalone executable is created in `outputs\`.
 SSHKEY 是一款轻量、易用的 Windows SSH 密钥配置工具，可帮助用户快速为远程服务器生成并安装 SSH 密钥。
 
 只需输入服务器 IP、端口、账号、密码和私钥保存路径，SSHKEY 即可完成服务器指纹确认、Ed25519 密钥生成、公钥写入、密钥登录验证，并自动生成可直接复制使用的 SSH 连接信息。
+
+当服务器的有效配置为 `PubkeyAuthentication no` 时，SSHKEY 仅会对使用 `root`
+账号的操作显示明确的修复确认框。确认后，SSHKEY 只启用公钥认证，验证 `sshd`
+配置并重新加载 SSH；公钥写入或私钥验证失败时会自动回滚。不会修改密码登录，
+也不会修改 `PermitRootLogin`。非 root 账号不会自动修改服务器，而是提示需要管理员处理。
 
 ### 功能
 
@@ -103,8 +118,10 @@ SSHKEY 是一款轻量、易用的 Windows SSH 密钥配置工具，可帮助用
 2. 如果缺少 OpenSSH，点击**一键安装 OpenSSH**并同意 Windows 管理员授权。
 3. 输入服务器 IP、SSH 端口、账号、密码和私钥保存路径。
 4. 核对并确认服务器指纹。
-5. 点击**生成并写入服务器**。
-6. 将生成的连接信息复制到 AI 编程工具中。
+5. 如果服务器报告 `PubkeyAuthentication no` 且账号为 `root`，阅读修复提示并点击**确定**继续，
+   或点击**取消**保持服务器不变。
+6. 点击**生成并写入服务器**。
+7. 将生成的连接信息复制到 AI 编程工具中。
 
 密码仅用于首次 SSH 连接，操作完成后会从窗口中清空，不会保存到磁盘。
 
