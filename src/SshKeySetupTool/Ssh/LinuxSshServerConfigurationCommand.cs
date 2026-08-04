@@ -27,6 +27,8 @@ set -eu
 main_config='/etc/ssh/sshd_config'
 managed_config='/etc/ssh/sshd_config.d/00-sshkey-setup-tool.conf'
 marker='# Managed by SSHKEY. Do not edit while setup is running.'
+operation_marker='# SSHKEY operation: {{operationId}}'
+new_drop_in_backup_marker='# SSHKEY new drop-in: {{operationId}}'
 backup='/etc/ssh/sshd_config.sshkey-setup-{{operationId}}.bak'
 managed_backup='/etc/ssh/sshd_config.d/00-sshkey-setup-tool.conf.sshkey-setup-{{operationId}}.bak'
 sshd="$(command -v sshd 2>/dev/null || true)"
@@ -39,9 +41,9 @@ is_enabled() {
 }
 reload_sshd() {
   if command -v systemctl >/dev/null 2>&1; then
-    systemctl reload sshd 2>/dev/null || systemctl reload ssh
+    systemctl reload sshd >/dev/null 2>&1 || systemctl reload ssh >/dev/null 2>&1
   elif command -v service >/dev/null 2>&1; then
-    service sshd reload 2>/dev/null || service ssh reload
+    service sshd reload >/dev/null 2>&1 || service ssh reload >/dev/null 2>&1
   else
     return 1
   fi
@@ -63,6 +65,12 @@ restore_drop_in() {
 restore_main() {
   cp -a -- "$backup" "$main_config"
 }
+restore_drop_in_and_reload() {
+  restore_drop_in && "$sshd" -t 2>/dev/null && reload_sshd
+}
+restore_main_and_reload() {
+  restore_main && "$sshd" -t 2>/dev/null && reload_sshd
+}
 trap cleanup EXIT
 
 if [ -d '/etc/ssh/sshd_config.d' ]; then
@@ -75,7 +83,13 @@ if [ -d '/etc/ssh/sshd_config.d' ]; then
   fi
 
   if [ "$try_drop_in" = true ]; then
-    if [ "$had_existing_drop_in" = true ] && ! cp -a -- "$managed_config" "$managed_backup"; then
+    if [ "$had_existing_drop_in" = true ]; then
+      if ! cp -a -- "$managed_config" "$managed_backup"; then
+        printf '%s\n' 'SSHKEY_ERROR backup-failed'
+        exit 42
+      fi
+    elif ! printf '%s\n' "$new_drop_in_backup_marker" > "$managed_backup" ||
+         ! chmod 600 "$managed_backup"; then
       printf '%s\n' 'SSHKEY_ERROR backup-failed'
       exit 42
     fi
@@ -85,6 +99,7 @@ if [ -d '/etc/ssh/sshd_config.d' ]; then
     fi
     if ! cat > "$drop_in_tmp" <<EOF
 $marker
+$operation_marker
 PubkeyAuthentication yes
 EOF
     then
@@ -105,7 +120,7 @@ EOF
       fi
       exit 0
     fi
-    if ! restore_drop_in; then
+    if ! restore_drop_in_and_reload; then
       printf '%s\n' 'SSHKEY_ERROR rollback-failed'
       exit 43
     fi
@@ -138,18 +153,20 @@ fi
 rm -f -- "$main_tmp"
 main_tmp=''
 if ! "$sshd" -t 2>/dev/null || ! is_enabled; then
-  if ! restore_main; then
+  if ! restore_main_and_reload; then
     printf '%s\n' 'SSHKEY_ERROR rollback-failed'
     exit 43
   fi
+  rm -f -- "$backup"
   printf '%s\n' 'SSHKEY_ERROR validation-failed'
   exit 42
 fi
 if ! reload_sshd; then
-  if ! restore_main; then
+  if ! restore_main_and_reload; then
     printf '%s\n' 'SSHKEY_ERROR rollback-failed'
     exit 43
   fi
+  rm -f -- "$backup"
   printf '%s\n' 'SSHKEY_ERROR reload-failed'
   exit 42
 fi
@@ -203,6 +220,63 @@ printf '%s\n' 'SSHKEY_APPLIED main'
         return $"set -eu\nrm -f -- {ShellQuote(backupPath)}\n";
     }
 
+    public static string BuildRecovery(string operationId)
+    {
+        ValidateOperationId(operationId);
+        var mainBackupPath = MainConfigurationPath +
+            ".sshkey-setup-" + operationId + ".bak";
+        var managedBackupPath = ManagedDropInPath +
+            ".sshkey-setup-" + operationId + ".bak";
+        var operationMarker = "# SSHKEY operation: " + operationId;
+        var newDropInBackupMarker = "# SSHKEY new drop-in: " + operationId;
+
+        return $$"""
+set -eu
+main_config={{ShellQuote(MainConfigurationPath)}}
+managed_config={{ShellQuote(ManagedDropInPath)}}
+main_backup={{ShellQuote(mainBackupPath)}}
+managed_backup={{ShellQuote(managedBackupPath)}}
+marker={{ShellQuote(ManagedMarker)}}
+operation_marker={{ShellQuote(operationMarker)}}
+new_drop_in_backup_marker={{ShellQuote(newDropInBackupMarker)}}
+sshd="$(command -v sshd 2>/dev/null || true)"
+[ -n "$sshd" ] || [ ! -x /usr/sbin/sshd ] || sshd=/usr/sbin/sshd
+[ -n "$sshd" ] || { printf '%s\n' 'SSHKEY_ERROR sshd-not-found'; exit 41; }
+reload_sshd() {
+  if command -v systemctl >/dev/null 2>&1; then
+    systemctl reload sshd >/dev/null 2>&1 || systemctl reload ssh >/dev/null 2>&1
+  elif command -v service >/dev/null 2>&1; then
+    service sshd reload >/dev/null 2>&1 || service ssh reload >/dev/null 2>&1
+  else
+    return 1
+  fi
+}
+recovered=false
+if [ -f "$main_backup" ]; then
+  cp -a -- "$main_backup" "$main_config"
+  recovered=true
+elif [ -f "$managed_backup" ]; then
+  if [ "$(sed -n '1p' "$managed_backup" || true)" = "$new_drop_in_backup_marker" ]; then
+    rm -f -- "$managed_config"
+  else
+    cp -a -- "$managed_backup" "$managed_config"
+  fi
+  recovered=true
+elif [ -f "$managed_config" ] &&
+     [ "$(sed -n '1p' "$managed_config" || true)" = "$marker" ] &&
+     [ "$(sed -n '2p' "$managed_config" || true)" = "$operation_marker" ]; then
+  rm -f -- "$managed_config"
+  recovered=true
+fi
+if [ "$recovered" = false ]; then
+  exit 0
+fi
+"$sshd" -t 2>/dev/null
+reload_sshd
+rm -f -- "$main_backup" "$managed_backup"
+""";
+    }
+
     public static string BuildRollback(SshServerConfigurationChange change)
     {
         ArgumentNullException.ThrowIfNull(change);
@@ -225,9 +299,9 @@ sshd="$(command -v sshd 2>/dev/null || true)"
 [ -n "$sshd" ] || { printf '%s\n' 'SSHKEY_ERROR sshd-not-found'; exit 41; }
 reload_sshd() {
   if command -v systemctl >/dev/null 2>&1; then
-    systemctl reload sshd 2>/dev/null || systemctl reload ssh
+    systemctl reload sshd >/dev/null 2>&1 || systemctl reload ssh >/dev/null 2>&1
   elif command -v service >/dev/null 2>&1; then
-    service sshd reload 2>/dev/null || service ssh reload
+    service sshd reload >/dev/null 2>&1 || service ssh reload >/dev/null 2>&1
   else
     return 1
   fi

@@ -62,6 +62,14 @@ public sealed class KeySetupService : IKeySetupService
         {
             return Failure(error);
         }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception error)
+        {
+            return Failure(error, SetupFailureKind.ServerConfigurationInspection);
+        }
 
         SshServerConfigurationChange? change = null;
         if (probe.State == SshPublicKeyAuthenticationState.Unavailable)
@@ -92,19 +100,45 @@ public sealed class KeySetupService : IKeySetupService
             }
 
             progress?.Report(new(SetupPhase.EnablingServerConfiguration));
+            var operationId = Guid.NewGuid().ToString("N");
             try
             {
                 change = await _sshClient.EnablePublicKeyAuthenticationAsync(
                     request,
                     approvedHostKey,
+                    operationId,
                     cancellationToken);
             }
-            catch (SshSetupOperationException error)
+            catch (OperationCanceledException cancellation)
             {
-                return Failure(error);
+                var recoveryFailure = await TryRecoverApplyAsync(
+                    request,
+                    approvedHostKey,
+                    operationId,
+                    progress,
+                    cancellation.Message);
+                if (recoveryFailure is not null)
+                {
+                    return recoveryFailure;
+                }
+
+                throw;
+            }
+            catch (Exception error)
+            {
+                var recoveryFailure = await TryRecoverApplyAsync(
+                    request,
+                    approvedHostKey,
+                    operationId,
+                    progress,
+                    error.Message);
+                return recoveryFailure ?? Failure(
+                    error,
+                    SetupFailureKind.ServerConfigurationApply);
             }
         }
 
+        var currentFailureKind = SetupFailureKind.PublicKeyInstallation;
         try
         {
             progress?.Report(new(SetupPhase.InstallingPublicKey));
@@ -113,6 +147,7 @@ public sealed class KeySetupService : IKeySetupService
                 LinuxAuthorizedKeyCommand.Build(keyMaterial.PublicKeyLine),
                 approvedHostKey,
                 cancellationToken);
+            currentFailureKind = SetupFailureKind.PrivateKeyVerification;
             progress?.Report(new(SetupPhase.VerifyingPrivateKey));
             await _sshClient.VerifyPrivateKeyAsync(
                 request,
@@ -122,6 +157,7 @@ public sealed class KeySetupService : IKeySetupService
 
             if (change is not null)
             {
+                currentFailureKind = SetupFailureKind.ServerConfigurationApply;
                 await _sshClient.CommitServerConfigurationAsync(
                     request,
                     approvedHostKey,
@@ -151,11 +187,11 @@ public sealed class KeySetupService : IKeySetupService
 
             throw;
         }
-        catch (SshSetupOperationException error)
+        catch (Exception error)
         {
             if (change is null)
             {
-                return Failure(error);
+                return Failure(error, currentFailureKind);
             }
 
             var rollbackFailure = await TryRollbackAsync(
@@ -164,7 +200,34 @@ public sealed class KeySetupService : IKeySetupService
                 change,
                 progress,
                 error.Message);
-            return rollbackFailure ?? Failure(error);
+            return rollbackFailure ?? Failure(error, currentFailureKind);
+        }
+    }
+
+    private async Task<SetupResult?> TryRecoverApplyAsync(
+        SetupRequest request,
+        OpenSshHostKey approvedHostKey,
+        string operationId,
+        IProgress<SetupProgress>? progress,
+        string originalErrorMessage)
+    {
+        progress?.Report(new(SetupPhase.RollingBackServerConfiguration));
+        using var rollbackTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(45));
+        try
+        {
+            await _sshClient.RecoverServerConfigurationAsync(
+                request,
+                approvedHostKey,
+                operationId,
+                rollbackTimeout.Token);
+            return null;
+        }
+        catch (Exception recoveryError)
+        {
+            return RollbackFailure(
+                GetRemoteRecoveryPaths(operationId),
+                originalErrorMessage,
+                recoveryError.Message);
         }
     }
 
@@ -188,18 +251,33 @@ public sealed class KeySetupService : IKeySetupService
         }
         catch (Exception rollbackError)
         {
-            var backupPath = GetRemoteBackupPath(change);
-            return new SetupResult(
-                false,
-                $"SSH configuration rollback failed; manual recovery may be required. " +
-                $"Remote backup: {backupPath}. Original error: {originalErrorMessage}. " +
-                $"Rollback error: {rollbackError.Message}",
-                FailureKind: SetupFailureKind.Rollback);
+            return RollbackFailure(
+                GetRemoteBackupPath(change),
+                originalErrorMessage,
+                rollbackError.Message);
         }
     }
 
-    private static SetupResult Failure(SshSetupOperationException error) =>
-        new(false, error.Message, FailureKind: error.FailureKind);
+    private static SetupResult Failure(
+        Exception error,
+        SetupFailureKind fallbackKind = SetupFailureKind.None) =>
+        new(
+            false,
+            error.Message,
+            FailureKind: error is SshSetupOperationException setupError
+                ? setupError.FailureKind
+                : fallbackKind);
+
+    private static SetupResult RollbackFailure(
+        string backupPaths,
+        string originalErrorMessage,
+        string rollbackErrorMessage) =>
+        new(
+            false,
+            $"SSH configuration rollback failed; manual recovery may be required. " +
+            $"Remote backup: {backupPaths}. Original error: {originalErrorMessage}. " +
+            $"Rollback error: {rollbackErrorMessage}",
+            FailureKind: SetupFailureKind.Rollback);
 
     private static string GetRemoteBackupPath(SshServerConfigurationChange change)
     {
@@ -208,4 +286,8 @@ public sealed class KeySetupService : IKeySetupService
             : "/etc/ssh/sshd_config";
         return $"{basePath}.sshkey-setup-{change.OperationId}.bak";
     }
+
+    private static string GetRemoteRecoveryPaths(string operationId) =>
+        $"/etc/ssh/sshd_config.sshkey-setup-{operationId}.bak or " +
+        $"/etc/ssh/sshd_config.d/00-sshkey-setup-tool.conf.sshkey-setup-{operationId}.bak";
 }

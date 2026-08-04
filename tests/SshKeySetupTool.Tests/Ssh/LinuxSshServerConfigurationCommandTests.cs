@@ -43,6 +43,11 @@ public sealed class LinuxSshServerConfigurationCommandTests
         Assert.Contains("systemctl reload ssh", command);
         Assert.Contains("service sshd reload", command);
         Assert.Contains("service ssh reload", command);
+        Assert.Contains("# SSHKEY operation: 0123456789abcdef0123456789abcdef", command);
+        Assert.Contains("restore_drop_in_and_reload", command);
+        Assert.Contains("restore_main_and_reload", command);
+        Assert.Contains("systemctl reload sshd >/dev/null 2>&1", command);
+        Assert.Contains("service ssh reload >/dev/null 2>&1", command);
         Assert.Contains("SSHKEY_APPLIED", command);
     }
 
@@ -122,5 +127,28 @@ public sealed class LinuxSshServerConfigurationCommandTests
                 true));
 
         Assert.Contains("cp -a -- '/etc/ssh/sshd_config.d/00-sshkey-setup-tool.conf.sshkey-setup-0123456789abcdef0123456789abcdef.bak' '/etc/ssh/sshd_config.d/00-sshkey-setup-tool.conf'", command);
+    }
+
+    [Fact]
+    public void BuildRecovery_RestoresOnlyArtifactsOwnedByTheOperation()
+    {
+        var command = LinuxSshServerConfigurationCommand.BuildRecovery(
+            "0123456789abcdef0123456789abcdef");
+
+        Assert.Contains(
+            "'/etc/ssh/sshd_config.sshkey-setup-0123456789abcdef0123456789abcdef.bak'",
+            command);
+        Assert.Contains(
+            "'/etc/ssh/sshd_config.d/00-sshkey-setup-tool.conf.sshkey-setup-0123456789abcdef0123456789abcdef.bak'",
+            command);
+        Assert.Contains(
+            "# SSHKEY operation: 0123456789abcdef0123456789abcdef",
+            command);
+        Assert.Contains(
+            "# SSHKEY new drop-in: 0123456789abcdef0123456789abcdef",
+            command);
+        Assert.Contains("\"$sshd\" -t", command);
+        Assert.Contains("reload_sshd", command);
+        Assert.DoesNotContain("../", command);
     }
 }

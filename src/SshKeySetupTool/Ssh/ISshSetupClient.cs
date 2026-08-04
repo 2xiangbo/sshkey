@@ -22,6 +22,13 @@ public interface ISshSetupClient
     Task<SshServerConfigurationChange> EnablePublicKeyAuthenticationAsync(
         SetupRequest request,
         OpenSshHostKey approvedHostKey,
+        string operationId,
+        CancellationToken cancellationToken);
+
+    Task RecoverServerConfigurationAsync(
+        SetupRequest request,
+        OpenSshHostKey approvedHostKey,
+        string operationId,
         CancellationToken cancellationToken);
 
     Task CommitServerConfigurationAsync(

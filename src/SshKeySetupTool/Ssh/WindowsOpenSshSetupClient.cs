@@ -136,9 +136,9 @@ public sealed class WindowsOpenSshSetupClient : ISshSetupClient
     public async Task<SshServerConfigurationChange> EnablePublicKeyAuthenticationAsync(
         SetupRequest request,
         OpenSshHostKey approvedHostKey,
+        string operationId,
         CancellationToken cancellationToken)
     {
-        var operationId = Guid.NewGuid().ToString("N");
         var result = await RunPinnedSshAsync(
             request,
             approvedHostKey,
@@ -153,6 +153,25 @@ public sealed class WindowsOpenSshSetupClient : ISshSetupClient
         return LinuxSshServerConfigurationCommand.ParseApplyResult(
             operationId,
             result.StandardOutput);
+    }
+
+    public async Task RecoverServerConfigurationAsync(
+        SetupRequest request,
+        OpenSshHostKey approvedHostKey,
+        string operationId,
+        CancellationToken cancellationToken)
+    {
+        await RunPinnedSshAsync(
+            request,
+            approvedHostKey,
+            knownHostsPath => CreatePasswordStartInfo(
+                request,
+                LinuxSshServerConfigurationCommand.BuildRecovery(operationId),
+                approvedHostKey,
+                knownHostsPath),
+            SetupFailureKind.Rollback,
+            "SSH server configuration recovery failed",
+            cancellationToken);
     }
 
     public async Task CommitServerConfigurationAsync(

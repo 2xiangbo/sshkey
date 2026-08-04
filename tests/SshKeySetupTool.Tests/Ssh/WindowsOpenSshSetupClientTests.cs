@@ -282,6 +282,7 @@ public sealed class WindowsOpenSshSetupClientTests
         var change = await client.EnablePublicKeyAuthenticationAsync(
             request,
             hostKey,
+            "0123456789abcdef0123456789abcdef",
             CancellationToken.None);
 
         Assert.Equal(SshServerConfigurationStrategy.ManagedDropIn, change.Strategy);
@@ -390,6 +391,7 @@ public sealed class WindowsOpenSshSetupClientTests
             client.EnablePublicKeyAuthenticationAsync(
                 CreateRequest(),
                 CreateApprovedHostKey(),
+                "0123456789abcdef0123456789abcdef",
                 CancellationToken.None));
 
         Assert.Equal(SetupFailureKind.ServerConfigurationApply, error.FailureKind);
@@ -400,6 +402,7 @@ public sealed class WindowsOpenSshSetupClientTests
     [InlineData("apply", SetupFailureKind.ServerConfigurationApply)]
     [InlineData("commit", SetupFailureKind.ServerConfigurationApply)]
     [InlineData("rollback", SetupFailureKind.Rollback)]
+    [InlineData("recover", SetupFailureKind.Rollback)]
     public async Task ConfigurationOperations_TagNonzeroFailures(
         string operation,
         SetupFailureKind expectedFailureKind)
@@ -424,15 +427,49 @@ public sealed class WindowsOpenSshSetupClientTests
         var error = await Assert.ThrowsAsync<SshSetupOperationException>(() => operation switch
         {
             "inspect" => client.InspectServerConfigurationAsync(request, hostKey, CancellationToken.None),
-            "apply" => client.EnablePublicKeyAuthenticationAsync(request, hostKey, CancellationToken.None),
+            "apply" => client.EnablePublicKeyAuthenticationAsync(
+                request,
+                hostKey,
+                "0123456789abcdef0123456789abcdef",
+                CancellationToken.None),
             "commit" => client.CommitServerConfigurationAsync(request, hostKey, change, CancellationToken.None),
             "rollback" => client.RollbackServerConfigurationAsync(request, hostKey, change, CancellationToken.None),
+            "recover" => client.RecoverServerConfigurationAsync(
+                request,
+                hostKey,
+                "0123456789abcdef0123456789abcdef",
+                CancellationToken.None),
             _ => throw new ArgumentOutOfRangeException(nameof(operation))
         });
 
         Assert.Equal(expectedFailureKind, error.FailureKind);
         Assert.DoesNotContain("secret", error.Message, StringComparison.Ordinal);
         Assert.Contains("[redacted]", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task RecoverServerConfigurationAsync_UsesOwnedRecoveryCommandAndPinnedPassword()
+    {
+        const string operationId = "0123456789abcdef0123456789abcdef";
+        var runner = new RecordingProcessRunner(startInfo =>
+        {
+            AssertPinnedPasswordCommand(startInfo);
+            Assert.Contains(
+                LinuxSshServerConfigurationCommand.BuildRecovery(operationId),
+                startInfo.ArgumentList);
+            return new ProcessResult(0, "", "");
+        });
+        var client = new WindowsOpenSshSetupClient(
+            (_, _) => true,
+            new WindowsOpenSshExecutables(@"C:\Windows\System32\OpenSSH\ssh.exe"),
+            runner,
+            @"C:\tool\SshKeySetupTool.exe");
+
+        await client.RecoverServerConfigurationAsync(
+            CreateRequest(),
+            CreateApprovedHostKey(),
+            operationId,
+            CancellationToken.None);
     }
 
     private static SetupRequest CreateRequest() =>

@@ -131,6 +131,26 @@ public sealed class KeySetupServiceTests
     }
 
     [Fact]
+    public async Task RunAsync_InspectionTimeout_ReturnsInspectionFailure()
+    {
+        var sshClient = new FakeSshSetupClient
+        {
+            InspectException = new TimeoutException("inspection timed out")
+        };
+        var service = new KeySetupService(new FakeKeyMaterialFactory(), sshClient);
+
+        var result = await service.RunAsync(
+            CreateRequest("root"),
+            (_, _) => true,
+            null,
+            CancellationToken.None);
+
+        Assert.Equal(SetupFailureKind.ServerConfigurationInspection, result.FailureKind);
+        Assert.Contains("inspection timed out", result.Message);
+        Assert.Equal(["host", "inspect"], sshClient.Calls);
+    }
+
+    [Fact]
     public async Task RunAsync_VerificationFailure_RollsBackAndDoesNotCommit()
     {
         var sshClient = new FakeSshSetupClient
@@ -209,6 +229,120 @@ public sealed class KeySetupServiceTests
     }
 
     [Fact]
+    public async Task RunAsync_ApplyTimeout_RecoversWithLiveTokenAndReturnsApplyFailure()
+    {
+        var sshClient = new FakeSshSetupClient
+        {
+            Probe = new(SshPublicKeyAuthenticationState.Disabled, "pubkeyauthentication no\n"),
+            EnableException = new TimeoutException("apply timed out")
+        };
+        var service = new KeySetupService(new FakeKeyMaterialFactory(), sshClient);
+
+        var result = await service.RunAsync(
+            CreateRequest("root"),
+            (_, _) => true,
+            null,
+            CancellationToken.None);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(SetupFailureKind.ServerConfigurationApply, result.FailureKind);
+        Assert.Equal(["host", "inspect", "apply", "recover"], sshClient.Calls);
+        Assert.Matches("^[0-9a-f]{32}$", sshClient.OperationId);
+        Assert.Equal(sshClient.OperationId, sshClient.RecoveryOperationId);
+        Assert.False(sshClient.RecoveryToken!.Value.IsCancellationRequested);
+    }
+
+    [Fact]
+    public async Task RunAsync_MalformedApplyResult_RecoversBeforeReturningFailure()
+    {
+        var sshClient = new FakeSshSetupClient
+        {
+            Probe = new(SshPublicKeyAuthenticationState.Disabled, "pubkeyauthentication no\n"),
+            EnableException = new SshSetupOperationException(
+                SetupFailureKind.ServerConfigurationApply,
+                "invalid apply sentinel")
+        };
+        var service = new KeySetupService(new FakeKeyMaterialFactory(), sshClient);
+
+        var result = await service.RunAsync(
+            CreateRequest("root"),
+            (_, _) => true,
+            null,
+            CancellationToken.None);
+
+        Assert.Equal(SetupFailureKind.ServerConfigurationApply, result.FailureKind);
+        Assert.Equal(["host", "inspect", "apply", "recover"], sshClient.Calls);
+    }
+
+    [Fact]
+    public async Task RunAsync_CancellationDuringApply_RecoversWithLiveTokenAndRethrows()
+    {
+        using var cancellation = new CancellationTokenSource();
+        var sshClient = new FakeSshSetupClient
+        {
+            Probe = new(SshPublicKeyAuthenticationState.Disabled, "pubkeyauthentication no\n"),
+            BeforeEnable = cancellation.Cancel,
+            EnableException = new OperationCanceledException("apply cancelled")
+        };
+        var service = new KeySetupService(new FakeKeyMaterialFactory(), sshClient);
+
+        await Assert.ThrowsAsync<OperationCanceledException>(() => service.RunAsync(
+            CreateRequest("root"),
+            (_, _) => true,
+            null,
+            cancellation.Token));
+
+        Assert.Equal(["host", "inspect", "apply", "recover"], sshClient.Calls);
+        Assert.False(sshClient.RecoveryToken!.Value.IsCancellationRequested);
+    }
+
+    [Fact]
+    public async Task RunAsync_InstallTimeoutAfterApply_RollsBackAndReturnsInstallFailure()
+    {
+        var sshClient = new FakeSshSetupClient
+        {
+            Probe = new(SshPublicKeyAuthenticationState.Disabled, "pubkeyauthentication no\n"),
+            InstallException = new TimeoutException("install timed out")
+        };
+        var service = new KeySetupService(new FakeKeyMaterialFactory(), sshClient);
+
+        var result = await service.RunAsync(
+            CreateRequest("root"),
+            (_, _) => true,
+            null,
+            CancellationToken.None);
+
+        Assert.Equal(SetupFailureKind.PublicKeyInstallation, result.FailureKind);
+        Assert.Equal(
+            ["host", "inspect", "apply", "install", "rollback"],
+            sshClient.Calls);
+    }
+
+    [Fact]
+    public async Task RunAsync_ApplyRecoveryFailure_ReturnsRollbackPathsAndBothErrors()
+    {
+        var sshClient = new FakeSshSetupClient
+        {
+            Probe = new(SshPublicKeyAuthenticationState.Disabled, "pubkeyauthentication no\n"),
+            EnableException = new TimeoutException("apply timed out"),
+            RecoveryException = new InvalidOperationException("recovery failed")
+        };
+        var service = new KeySetupService(new FakeKeyMaterialFactory(), sshClient);
+
+        var result = await service.RunAsync(
+            CreateRequest("root"),
+            (_, _) => true,
+            null,
+            CancellationToken.None);
+
+        Assert.Equal(SetupFailureKind.Rollback, result.FailureKind);
+        Assert.Contains("/etc/ssh/sshd_config.sshkey-setup-", result.Message);
+        Assert.Contains("/etc/ssh/sshd_config.d/00-sshkey-setup-tool.conf.sshkey-setup-", result.Message);
+        Assert.Contains("apply timed out", result.Message);
+        Assert.Contains("recovery failed", result.Message);
+    }
+
+    [Fact]
     public async Task RunAsync_ValidationFailureDoesNotCreateKeysOrConnect()
     {
         var keyFactory = new FakeKeyMaterialFactory();
@@ -256,10 +390,18 @@ public sealed class KeySetupServiceTests
         public SshServerConfigurationProbe Probe { get; init; } = new(
             SshPublicKeyAuthenticationState.Enabled,
             "pubkeyauthentication yes\n");
+        public Exception? InspectException { get; init; }
         public Exception? VerifyException { get; init; }
+        public Exception? EnableException { get; init; }
+        public Exception? InstallException { get; init; }
         public Exception? RollbackException { get; init; }
+        public Exception? RecoveryException { get; init; }
+        public Action? BeforeEnable { get; init; }
         public Action? BeforeVerify { get; init; }
         public CancellationToken? RollbackToken { get; private set; }
+        public CancellationToken? RecoveryToken { get; private set; }
+        public string OperationId { get; private set; } = string.Empty;
+        public string RecoveryOperationId { get; private set; } = string.Empty;
 
         public Task<OpenSshHostKey> ApproveHostKeyAsync(
             SetupRequest request,
@@ -276,19 +418,43 @@ public sealed class KeySetupServiceTests
             CancellationToken cancellationToken)
         {
             Calls.Add("inspect");
-            return Task.FromResult(Probe);
+            return InspectException is null
+                ? Task.FromResult(Probe)
+                : Task.FromException<SshServerConfigurationProbe>(InspectException);
         }
 
         public Task<SshServerConfigurationChange> EnablePublicKeyAuthenticationAsync(
             SetupRequest request,
             OpenSshHostKey approvedHostKey,
+            string operationId,
             CancellationToken cancellationToken)
         {
             Calls.Add("apply");
+            OperationId = operationId;
+            BeforeEnable?.Invoke();
+            if (EnableException is not null)
+            {
+                return Task.FromException<SshServerConfigurationChange>(EnableException);
+            }
+
             return Task.FromResult(new SshServerConfigurationChange(
-                "0123456789abcdef0123456789abcdef",
+                operationId,
                 SshServerConfigurationStrategy.ManagedDropIn,
                 false));
+        }
+
+        public Task RecoverServerConfigurationAsync(
+            SetupRequest request,
+            OpenSshHostKey approvedHostKey,
+            string operationId,
+            CancellationToken cancellationToken)
+        {
+            Calls.Add("recover");
+            RecoveryOperationId = operationId;
+            RecoveryToken = cancellationToken;
+            return RecoveryException is null
+                ? Task.CompletedTask
+                : Task.FromException(RecoveryException);
         }
 
         public Task InstallPublicKeyAsync(
@@ -298,7 +464,9 @@ public sealed class KeySetupServiceTests
             CancellationToken cancellationToken)
         {
             Calls.Add("install");
-            return Task.CompletedTask;
+            return InstallException is null
+                ? Task.CompletedTask
+                : Task.FromException(InstallException);
         }
 
         public Task VerifyPrivateKeyAsync(
