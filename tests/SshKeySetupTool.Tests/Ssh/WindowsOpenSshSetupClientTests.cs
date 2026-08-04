@@ -319,6 +319,129 @@ public sealed class WindowsOpenSshSetupClientTests
         Assert.False(observedToken.IsCancellationRequested);
     }
 
+    [Fact]
+    public async Task CommitServerConfigurationAsync_UsesDerivedCommitCommandAndPinnedPassword()
+    {
+        var change = new SshServerConfigurationChange(
+            "0123456789abcdef0123456789abcdef",
+            SshServerConfigurationStrategy.ManagedDropIn,
+            true);
+        var runner = new RecordingProcessRunner(startInfo =>
+        {
+            AssertPinnedPasswordCommand(startInfo);
+            Assert.Contains(
+                LinuxSshServerConfigurationCommand.BuildCommit(change),
+                startInfo.ArgumentList);
+            return new ProcessResult(0, "", "");
+        });
+        var client = new WindowsOpenSshSetupClient(
+            (_, _) => true,
+            new WindowsOpenSshExecutables(@"C:\Windows\System32\OpenSSH\ssh.exe"),
+            runner,
+            @"C:\tool\SshKeySetupTool.exe");
+
+        await client.CommitServerConfigurationAsync(
+            CreateRequest(),
+            CreateApprovedHostKey(),
+            change,
+            CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task RollbackServerConfigurationAsync_UsesDerivedRollbackCommandAndPinnedPassword()
+    {
+        var change = new SshServerConfigurationChange(
+            "0123456789abcdef0123456789abcdef",
+            SshServerConfigurationStrategy.MainConfiguration,
+            false);
+        var runner = new RecordingProcessRunner(startInfo =>
+        {
+            AssertPinnedPasswordCommand(startInfo);
+            Assert.Contains(
+                LinuxSshServerConfigurationCommand.BuildRollback(change),
+                startInfo.ArgumentList);
+            return new ProcessResult(0, "", "");
+        });
+        var client = new WindowsOpenSshSetupClient(
+            (_, _) => true,
+            new WindowsOpenSshExecutables(@"C:\Windows\System32\OpenSSH\ssh.exe"),
+            runner,
+            @"C:\tool\SshKeySetupTool.exe");
+
+        await client.RollbackServerConfigurationAsync(
+            CreateRequest(),
+            CreateApprovedHostKey(),
+            change,
+            CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task EnablePublicKeyAuthenticationAsync_RejectsMalformedSentinelWithApplyFailure()
+    {
+        var runner = new RecordingProcessRunner(_ =>
+            new ProcessResult(0, "SSHKEY_APPLIED main\nnoise\n", ""));
+        var client = new WindowsOpenSshSetupClient(
+            (_, _) => true,
+            new WindowsOpenSshExecutables(@"C:\Windows\System32\OpenSSH\ssh.exe"),
+            runner,
+            @"C:\tool\SshKeySetupTool.exe");
+
+        var error = await Assert.ThrowsAsync<SshSetupOperationException>(() =>
+            client.EnablePublicKeyAuthenticationAsync(
+                CreateRequest(),
+                CreateApprovedHostKey(),
+                CancellationToken.None));
+
+        Assert.Equal(SetupFailureKind.ServerConfigurationApply, error.FailureKind);
+    }
+
+    [Theory]
+    [InlineData("inspect", SetupFailureKind.ServerConfigurationInspection)]
+    [InlineData("apply", SetupFailureKind.ServerConfigurationApply)]
+    [InlineData("commit", SetupFailureKind.ServerConfigurationApply)]
+    [InlineData("rollback", SetupFailureKind.Rollback)]
+    public async Task ConfigurationOperations_TagNonzeroFailures(
+        string operation,
+        SetupFailureKind expectedFailureKind)
+    {
+        var runner = new RecordingProcessRunner(startInfo =>
+        {
+            AssertPinnedPasswordCommand(startInfo);
+            return new ProcessResult(255, "", "secret was rejected");
+        });
+        var client = new WindowsOpenSshSetupClient(
+            (_, _) => true,
+            new WindowsOpenSshExecutables(@"C:\Windows\System32\OpenSSH\ssh.exe"),
+            runner,
+            @"C:\tool\SshKeySetupTool.exe");
+        var request = CreateRequest();
+        var hostKey = CreateApprovedHostKey();
+        var change = new SshServerConfigurationChange(
+            "0123456789abcdef0123456789abcdef",
+            SshServerConfigurationStrategy.MainConfiguration,
+            false);
+
+        var error = await Assert.ThrowsAsync<SshSetupOperationException>(() => operation switch
+        {
+            "inspect" => client.InspectServerConfigurationAsync(request, hostKey, CancellationToken.None),
+            "apply" => client.EnablePublicKeyAuthenticationAsync(request, hostKey, CancellationToken.None),
+            "commit" => client.CommitServerConfigurationAsync(request, hostKey, change, CancellationToken.None),
+            "rollback" => client.RollbackServerConfigurationAsync(request, hostKey, change, CancellationToken.None),
+            _ => throw new ArgumentOutOfRangeException(nameof(operation))
+        });
+
+        Assert.Equal(expectedFailureKind, error.FailureKind);
+        Assert.DoesNotContain("secret", error.Message, StringComparison.Ordinal);
+        Assert.Contains("[redacted]", error.Message, StringComparison.Ordinal);
+    }
+
+    private static SetupRequest CreateRequest() =>
+        new("203.0.113.10", 22, "root", "secret", @"C:\keys\id_ed25519");
+
+    private static OpenSshHostKey CreateApprovedHostKey() =>
+        OpenSshHostKey.ParseKnownHostsOutput(
+            "203.0.113.10 ssh-ed25519 ZmFrZS1ob3N0LWtleQ==\n");
+
     private static void AssertPinnedToApprovedKey(ProcessStartInfo startInfo, byte[] hostKeyBytes)
     {
         Assert.Equal(@"C:\Windows\System32\OpenSSH\ssh.exe", startInfo.FileName);
