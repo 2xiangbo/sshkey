@@ -103,7 +103,11 @@ public partial class Form1 : Form
         try
         {
             var request = BuildRequest();
-            var result = await _keySetupService.RunAsync(request, cancellationToken);
+            var result = await _keySetupService.RunAsync(
+                request,
+                (_, _) => false,
+                null,
+                cancellationToken);
             if (result.Succeeded)
             {
                 var connectionDetails = CodexConnectionDetails.Format(request, result.PrivateKeyPath!);

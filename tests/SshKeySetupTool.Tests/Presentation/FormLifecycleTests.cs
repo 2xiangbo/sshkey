@@ -159,6 +159,8 @@ public sealed class FormLifecycleTests
 
         public Task<SetupResult> RunAsync(
             SetupRequest request,
+            Func<SetupRequest, SshServerConfigurationProbe, bool> confirmServerConfiguration,
+            IProgress<SetupProgress>? progress,
             CancellationToken cancellationToken)
         {
             Tokens.Add(cancellationToken);
@@ -177,6 +179,8 @@ public sealed class FormLifecycleTests
 
         public async Task<SetupResult> RunAsync(
             SetupRequest request,
+            Func<SetupRequest, SshServerConfigurationProbe, bool> confirmServerConfiguration,
+            IProgress<SetupProgress>? progress,
             CancellationToken cancellationToken)
         {
             Started = true;
