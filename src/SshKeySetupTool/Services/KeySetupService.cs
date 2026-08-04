@@ -146,10 +146,7 @@ public sealed class KeySetupService : IKeySetupService
                 cancellation.Message);
             if (rollbackFailure is not null)
             {
-                return rollbackFailure with
-                {
-                    Message = $"{rollbackFailure.Message} Original error: {cancellation.Message}"
-                };
+                return rollbackFailure;
             }
 
             throw;
