@@ -223,15 +223,100 @@ public sealed class WindowsOpenSshSetupClientTests
         var approvedHostKey = OpenSshHostKey.ParseKnownHostsOutput(
             "203.0.113.10 ssh-ed25519 ZmFrZS1ob3N0LWtleQ==\n");
 
-        var error = await Assert.ThrowsAsync<InvalidOperationException>(
+        var error = await Assert.ThrowsAsync<SshSetupOperationException>(
             () => client.InstallPublicKeyAsync(
                 request,
                 "echo installed",
                 approvedHostKey,
                 CancellationToken.None));
 
+        Assert.Equal(SetupFailureKind.PublicKeyInstallation, error.FailureKind);
         Assert.DoesNotContain("secret", error.Message, StringComparison.Ordinal);
         Assert.Contains("[redacted]", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task InspectServerConfigurationAsync_UsesPinnedPasswordSshAndParsesDisabled()
+    {
+        var runner = new RecordingProcessRunner(startInfo =>
+        {
+            AssertPinnedPasswordCommand(startInfo);
+            Assert.Contains(
+                LinuxSshServerConfigurationCommand.BuildProbe(),
+                startInfo.ArgumentList);
+            return new ProcessResult(0, "pubkeyauthentication no\n", "");
+        });
+        var client = new WindowsOpenSshSetupClient(
+            (_, _) => true,
+            new WindowsOpenSshExecutables(@"C:\Windows\System32\OpenSSH\ssh.exe"),
+            runner,
+            @"C:\tool\SshKeySetupTool.exe");
+        var request = new SetupRequest(
+            "203.0.113.10", 22, "root", "secret", @"C:\keys\id_ed25519");
+        var hostKey = OpenSshHostKey.ParseKnownHostsOutput(
+            "203.0.113.10 ssh-ed25519 ZmFrZS1ob3N0LWtleQ==\n");
+
+        var probe = await client.InspectServerConfigurationAsync(
+            request,
+            hostKey,
+            CancellationToken.None);
+
+        Assert.Equal(SshPublicKeyAuthenticationState.Disabled, probe.State);
+    }
+
+    [Fact]
+    public async Task EnablePublicKeyAuthenticationAsync_ParsesOnlyOwnedSentinel()
+    {
+        var runner = new RecordingProcessRunner(_ =>
+            new ProcessResult(0, "SSHKEY_APPLIED drop-in-new\n", ""));
+        var client = new WindowsOpenSshSetupClient(
+            (_, _) => true,
+            new WindowsOpenSshExecutables(@"C:\Windows\System32\OpenSSH\ssh.exe"),
+            runner,
+            @"C:\tool\SshKeySetupTool.exe");
+        var request = new SetupRequest(
+            "203.0.113.10", 22, "root", "secret", @"C:\keys\id_ed25519");
+        var hostKey = OpenSshHostKey.ParseKnownHostsOutput(
+            "203.0.113.10 ssh-ed25519 ZmFrZS1ob3N0LWtleQ==\n");
+
+        var change = await client.EnablePublicKeyAuthenticationAsync(
+            request,
+            hostKey,
+            CancellationToken.None);
+
+        Assert.Equal(SshServerConfigurationStrategy.ManagedDropIn, change.Strategy);
+        Assert.False(change.HadExistingManagedDropIn);
+        Assert.Matches("^[0-9a-f]{32}$", change.OperationId);
+    }
+
+    [Fact]
+    public async Task RollbackServerConfigurationAsync_UsesPasswordAfterCancellation()
+    {
+        var observedToken = default(CancellationToken);
+        var runner = new RecordingProcessRunner(
+            _ => new ProcessResult(0, "", ""),
+            token => observedToken = token);
+        var client = new WindowsOpenSshSetupClient(
+            (_, _) => true,
+            new WindowsOpenSshExecutables(@"C:\Windows\System32\OpenSSH\ssh.exe"),
+            runner,
+            @"C:\tool\SshKeySetupTool.exe");
+        var request = new SetupRequest(
+            "203.0.113.10", 22, "root", "secret", @"C:\keys\id_ed25519");
+        var hostKey = OpenSshHostKey.ParseKnownHostsOutput(
+            "203.0.113.10 ssh-ed25519 ZmFrZS1ob3N0LWtleQ==\n");
+        var change = new SshServerConfigurationChange(
+            "0123456789abcdef0123456789abcdef",
+            SshServerConfigurationStrategy.MainConfiguration,
+            false);
+
+        await client.RollbackServerConfigurationAsync(
+            request,
+            hostKey,
+            change,
+            CancellationToken.None);
+
+        Assert.False(observedToken.IsCancellationRequested);
     }
 
     private static void AssertPinnedToApprovedKey(ProcessStartInfo startInfo, byte[] hostKeyBytes)
@@ -255,6 +340,18 @@ public sealed class WindowsOpenSshSetupClientTests
         Assert.Contains(Convert.ToBase64String(hostKeyBytes), knownHostsLine);
     }
 
+    private static void AssertPinnedPasswordCommand(ProcessStartInfo startInfo)
+    {
+        Assert.Equal(@"C:\Windows\System32\OpenSSH\ssh.exe", startInfo.FileName);
+        Assert.Contains("StrictHostKeyChecking=yes", startInfo.ArgumentList);
+        Assert.Contains("BatchMode=no", startInfo.ArgumentList);
+        Assert.Contains("PreferredAuthentications=password,keyboard-interactive", startInfo.ArgumentList);
+        Assert.Contains("PubkeyAuthentication=no", startInfo.ArgumentList);
+        Assert.Contains(
+            WindowsOpenSshPasswordFallback.PasswordEnvironmentVariable,
+            startInfo.Environment.Keys);
+    }
+
     private static ProcessResult WriteDiscoveredHostKey(
         ProcessStartInfo startInfo,
         string knownHostsLine)
@@ -271,9 +368,14 @@ public sealed class WindowsOpenSshSetupClientTests
     {
         private readonly Func<ProcessStartInfo, ProcessResult> _resultFactory;
 
-        public RecordingProcessRunner(Func<ProcessStartInfo, ProcessResult> resultFactory)
+        private readonly Action<CancellationToken>? _observeToken;
+
+        public RecordingProcessRunner(
+            Func<ProcessStartInfo, ProcessResult> resultFactory,
+            Action<CancellationToken>? observeToken = null)
         {
             _resultFactory = resultFactory;
+            _observeToken = observeToken;
         }
 
         public List<ProcessStartInfo> StartInfos { get; } = [];
@@ -286,6 +388,7 @@ public sealed class WindowsOpenSshSetupClientTests
         {
             Assert.True(timeout > TimeSpan.Zero);
             Assert.NotEqual(Timeout.InfiniteTimeSpan, timeout);
+            _observeToken?.Invoke(cancellationToken);
             StartInfos.Add(startInfo);
             Timeouts.Add(timeout);
             return Task.FromResult(_resultFactory(startInfo));

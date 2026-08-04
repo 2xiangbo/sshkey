@@ -14,6 +14,28 @@ public interface ISshSetupClient
         OpenSshHostKey approvedHostKey,
         CancellationToken cancellationToken);
 
+    Task<SshServerConfigurationProbe> InspectServerConfigurationAsync(
+        SetupRequest request,
+        OpenSshHostKey approvedHostKey,
+        CancellationToken cancellationToken);
+
+    Task<SshServerConfigurationChange> EnablePublicKeyAuthenticationAsync(
+        SetupRequest request,
+        OpenSshHostKey approvedHostKey,
+        CancellationToken cancellationToken);
+
+    Task CommitServerConfigurationAsync(
+        SetupRequest request,
+        OpenSshHostKey approvedHostKey,
+        SshServerConfigurationChange change,
+        CancellationToken cancellationToken);
+
+    Task RollbackServerConfigurationAsync(
+        SetupRequest request,
+        OpenSshHostKey approvedHostKey,
+        SshServerConfigurationChange change,
+        CancellationToken cancellationToken);
+
     Task VerifyPrivateKeyAsync(
         SetupRequest request,
         string privateKeyPath,

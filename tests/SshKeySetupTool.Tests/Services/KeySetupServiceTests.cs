@@ -75,6 +75,45 @@ public sealed class KeySetupServiceTests
             return Task.CompletedTask;
         }
 
+        public Task<SshServerConfigurationProbe> InspectServerConfigurationAsync(
+            SetupRequest request,
+            OpenSshHostKey approvedHostKey,
+            CancellationToken cancellationToken)
+        {
+            return Task.FromResult(new SshServerConfigurationProbe(
+                SshPublicKeyAuthenticationState.Enabled,
+                "pubkeyauthentication yes\n"));
+        }
+
+        public Task<SshServerConfigurationChange> EnablePublicKeyAuthenticationAsync(
+            SetupRequest request,
+            OpenSshHostKey approvedHostKey,
+            CancellationToken cancellationToken)
+        {
+            return Task.FromResult(new SshServerConfigurationChange(
+                "0123456789abcdef0123456789abcdef",
+                SshServerConfigurationStrategy.ManagedDropIn,
+                false));
+        }
+
+        public Task CommitServerConfigurationAsync(
+            SetupRequest request,
+            OpenSshHostKey approvedHostKey,
+            SshServerConfigurationChange change,
+            CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task RollbackServerConfigurationAsync(
+            SetupRequest request,
+            OpenSshHostKey approvedHostKey,
+            SshServerConfigurationChange change,
+            CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
+
         public Task VerifyPrivateKeyAsync(
             SetupRequest request,
             string privateKeyPath,

@@ -72,6 +72,7 @@ public sealed class WindowsOpenSshSetupClient : ISshSetupClient
             if (!File.Exists(knownHostsPath))
             {
                 throw CreateFailure(
+                    SetupFailureKind.None,
                     "Windows OpenSSH host-key discovery failed",
                     result,
                     request.Password);
@@ -94,12 +95,13 @@ public sealed class WindowsOpenSshSetupClient : ISshSetupClient
         }
     }
 
-    public Task InstallPublicKeyAsync(
+    public async Task InstallPublicKeyAsync(
         SetupRequest request,
         string command,
         OpenSshHostKey approvedHostKey,
-        CancellationToken cancellationToken) =>
-        RunPinnedSshAsync(
+        CancellationToken cancellationToken)
+    {
+        await RunPinnedSshAsync(
             request,
             approvedHostKey,
             knownHostsPath => CreatePasswordStartInfo(
@@ -107,15 +109,97 @@ public sealed class WindowsOpenSshSetupClient : ISshSetupClient
                 command,
                 approvedHostKey,
                 knownHostsPath),
+            SetupFailureKind.PublicKeyInstallation,
             "Windows OpenSSH password login failed",
             cancellationToken);
+    }
 
-    public Task VerifyPrivateKeyAsync(
+    public async Task<SshServerConfigurationProbe> InspectServerConfigurationAsync(
+        SetupRequest request,
+        OpenSshHostKey approvedHostKey,
+        CancellationToken cancellationToken)
+    {
+        var result = await RunPinnedSshAsync(
+            request,
+            approvedHostKey,
+            knownHostsPath => CreatePasswordStartInfo(
+                request,
+                LinuxSshServerConfigurationCommand.BuildProbe(),
+                approvedHostKey,
+                knownHostsPath),
+            SetupFailureKind.ServerConfigurationInspection,
+            "SSH server configuration inspection failed",
+            cancellationToken);
+        return SshServerConfigurationProbe.Parse(result.StandardOutput);
+    }
+
+    public async Task<SshServerConfigurationChange> EnablePublicKeyAuthenticationAsync(
+        SetupRequest request,
+        OpenSshHostKey approvedHostKey,
+        CancellationToken cancellationToken)
+    {
+        var operationId = Guid.NewGuid().ToString("N");
+        var result = await RunPinnedSshAsync(
+            request,
+            approvedHostKey,
+            knownHostsPath => CreatePasswordStartInfo(
+                request,
+                LinuxSshServerConfigurationCommand.BuildApply(operationId),
+                approvedHostKey,
+                knownHostsPath),
+            SetupFailureKind.ServerConfigurationApply,
+            "SSH public-key authentication repair failed",
+            cancellationToken);
+        return LinuxSshServerConfigurationCommand.ParseApplyResult(
+            operationId,
+            result.StandardOutput);
+    }
+
+    public async Task CommitServerConfigurationAsync(
+        SetupRequest request,
+        OpenSshHostKey approvedHostKey,
+        SshServerConfigurationChange change,
+        CancellationToken cancellationToken)
+    {
+        await RunPinnedSshAsync(
+            request,
+            approvedHostKey,
+            knownHostsPath => CreatePasswordStartInfo(
+                request,
+                LinuxSshServerConfigurationCommand.BuildCommit(change),
+                approvedHostKey,
+                knownHostsPath),
+            SetupFailureKind.ServerConfigurationApply,
+            "SSH server configuration commit failed",
+            cancellationToken);
+    }
+
+    public async Task RollbackServerConfigurationAsync(
+        SetupRequest request,
+        OpenSshHostKey approvedHostKey,
+        SshServerConfigurationChange change,
+        CancellationToken cancellationToken)
+    {
+        await RunPinnedSshAsync(
+            request,
+            approvedHostKey,
+            knownHostsPath => CreatePasswordStartInfo(
+                request,
+                LinuxSshServerConfigurationCommand.BuildRollback(change),
+                approvedHostKey,
+                knownHostsPath),
+            SetupFailureKind.Rollback,
+            "SSH server configuration rollback failed",
+            cancellationToken);
+    }
+
+    public async Task VerifyPrivateKeyAsync(
         SetupRequest request,
         string privateKeyPath,
         OpenSshHostKey approvedHostKey,
-        CancellationToken cancellationToken) =>
-        RunPinnedSshAsync(
+        CancellationToken cancellationToken)
+    {
+        await RunPinnedSshAsync(
             request,
             approvedHostKey,
             knownHostsPath => CreatePrivateKeyStartInfo(
@@ -123,13 +207,16 @@ public sealed class WindowsOpenSshSetupClient : ISshSetupClient
                 privateKeyPath,
                 approvedHostKey,
                 knownHostsPath),
+            SetupFailureKind.PrivateKeyVerification,
             "Windows OpenSSH private-key verification failed",
             cancellationToken);
+    }
 
-    private async Task RunPinnedSshAsync(
+    private async Task<ProcessResult> RunPinnedSshAsync(
         SetupRequest request,
         OpenSshHostKey approvedHostKey,
         Func<string, ProcessStartInfo> createStartInfo,
+        SetupFailureKind failureKind,
         string failureMessage,
         CancellationToken cancellationToken)
     {
@@ -148,8 +235,14 @@ public sealed class WindowsOpenSshSetupClient : ISshSetupClient
                 cancellationToken);
             if (result.ExitCode != 0)
             {
-                throw CreateFailure(failureMessage, result, request.Password);
+                throw CreateFailure(
+                    failureKind,
+                    failureMessage,
+                    result,
+                    request.Password);
             }
+
+            return result;
         }
         finally
         {
@@ -280,7 +373,8 @@ public sealed class WindowsOpenSshSetupClient : ISshSetupClient
         startInfo.ArgumentList.Add(option);
     }
 
-    private static InvalidOperationException CreateFailure(
+    private static SshSetupOperationException CreateFailure(
+        SetupFailureKind failureKind,
         string message,
         ProcessResult result,
         string password)
@@ -291,7 +385,8 @@ public sealed class WindowsOpenSshSetupClient : ISshSetupClient
             details = details.Replace(password, "[redacted]", StringComparison.Ordinal);
         }
 
-        return new InvalidOperationException(
+        return new SshSetupOperationException(
+            failureKind,
             string.IsNullOrEmpty(details)
                 ? $"{message} (exit code {result.ExitCode})."
                 : $"{message}: {details}");
