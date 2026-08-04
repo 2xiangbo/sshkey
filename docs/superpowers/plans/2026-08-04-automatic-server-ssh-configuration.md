@@ -238,7 +238,7 @@ set -eu
 main_config='/etc/ssh/sshd_config'
 managed_config='/etc/ssh/sshd_config.d/00-sshkey-setup-tool.conf'
 marker='# Managed by SSHKEY. Do not edit while setup is running.'
-backup="/etc/ssh/sshd_config.sshkey-setup-$operation_id.bak"
+backup="/etc/ssh/sshd_config.sshkey-setup-__OPERATION_ID__.bak"
 sshd="$(command -v sshd 2>/dev/null || true)"
 [ -n "$sshd" ] || [ ! -x /usr/sbin/sshd ] || sshd=/usr/sbin/sshd
 [ -n "$sshd" ] || { printf '%s\n' 'SSHKEY_ERROR sshd-not-found'; exit 41; }
@@ -258,10 +258,8 @@ reload_sshd() {
 }
 ```
 
-The builder puts `operation_id='__OPERATION_ID__'` immediately after the
-variable declarations and replaces the literal token `__OPERATION_ID__` with
-the validated lowercase id before returning the command. No path is read from
-remote command output.
+The builder replaces the literal token `__OPERATION_ID__` in the backup path
+before returning the command. No path is read from remote command output.
 
 The remainder of the same script must execute this fixed sequence:
 
