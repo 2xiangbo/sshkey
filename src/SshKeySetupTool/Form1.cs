@@ -28,6 +28,7 @@ public partial class Form1 : Form
     private bool _openSshOperationInProgress = true;
     private Func<UiText, string>? _statusTextFactory;
     private Color _statusColor = Color.FromArgb(127, 149, 163);
+    private SetupPhase? _latestSetupPhase;
 
     public Form1()
         : this(null, useDefaultService: true)
@@ -98,15 +99,17 @@ public partial class Form1 : Form
     {
         generateButton.Enabled = false;
         connectionDetailsTextBox.Clear();
+        _latestSetupPhase = null;
         SetLocalizedStatus(text => text.Working, WorkingColor);
 
         try
         {
             var request = BuildRequest();
+            var progress = new Progress<SetupProgress>(HandleSetupProgress);
             var result = await _keySetupService.RunAsync(
                 request,
-                (_, _) => false,
-                null,
+                ConfirmServerConfiguration,
+                progress,
                 cancellationToken);
             if (result.Succeeded)
             {
@@ -120,7 +123,9 @@ public partial class Form1 : Form
             }
             else
             {
-                SetStatus(result.Message, ErrorColor);
+                SetLocalizedStatus(
+                    text => FormatFailure(text, result),
+                    ErrorColor);
             }
         }
         catch (OperationCanceledException)
@@ -232,6 +237,42 @@ public partial class Form1 : Form
     }
 
     private UiText CurrentText => UiTextCatalog.For(_language);
+
+    private string FormatFailure(UiText text, SetupResult result)
+    {
+        var label = text.FailureLabel(result.FailureKind);
+        return string.IsNullOrWhiteSpace(result.Message)
+            ? label
+            : $"{label}\r\n{result.Message}";
+    }
+
+    private void HandleSetupProgress(SetupProgress progress)
+    {
+        if (InvokeRequired)
+        {
+            BeginInvoke(new Action(() => HandleSetupProgress(progress)));
+            return;
+        }
+
+        _latestSetupPhase = progress.Phase;
+        var isRollback = progress.Phase == SetupPhase.RollingBackServerConfiguration;
+        SetLocalizedStatus(
+            text => GetPhaseText(text, _latestSetupPhase ?? progress.Phase),
+            isRollback ? ErrorColor : WorkingColor);
+    }
+
+    private static string GetPhaseText(UiText text, SetupPhase phase) => phase switch
+    {
+        SetupPhase.GeneratingKey => text.Working,
+        SetupPhase.DiscoveringServer => text.Working,
+        SetupPhase.CheckingServerConfiguration => text.CheckingServerConfiguration,
+        SetupPhase.WaitingForServerConfigurationConsent => text.WaitingForServerConfigurationConsent,
+        SetupPhase.EnablingServerConfiguration => text.EnablingServerConfiguration,
+        SetupPhase.InstallingPublicKey => text.InstallingPublicKey,
+        SetupPhase.VerifyingPrivateKey => text.VerifyingPrivateKey,
+        SetupPhase.RollingBackServerConfiguration => text.RollingBackServerConfiguration,
+        _ => text.Working
+    };
 
     private void ApplyLanguage()
     {
@@ -422,5 +463,28 @@ public partial class Form1 : Form
         var text = CurrentText;
         var message = string.Format(text.ConfirmServerMessageFormat, host, fingerprint);
         return MessageBox.Show(this, message, text.ConfirmServerTitle, MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes;
+    }
+
+    private bool ConfirmServerConfiguration(
+        SetupRequest request,
+        SshServerConfigurationProbe probe)
+    {
+        if (InvokeRequired)
+        {
+            return (bool)Invoke(new Func<bool>(
+                () => ConfirmServerConfiguration(request, probe)));
+        }
+
+        var text = CurrentText;
+        return MessageBox.Show(
+            this,
+            string.Format(
+                text.ConfirmServerConfigurationMessageFormat,
+                request.Host,
+                probe.RawOutput.Trim()),
+            text.ConfirmServerConfigurationTitle,
+            MessageBoxButtons.OKCancel,
+            MessageBoxIcon.Warning,
+            MessageBoxDefaultButton.Button2) == DialogResult.OK;
     }
 }

@@ -1,3 +1,5 @@
+using SshKeySetupTool.Domain;
+
 namespace SshKeySetupTool.Presentation;
 
 public enum UiLanguage
@@ -25,12 +27,42 @@ public sealed record UiText(
     string FailedPrefix,
     string ConfirmServerTitle,
     string ConfirmServerMessageFormat,
+    string ConfirmServerConfigurationTitle,
+    string ConfirmServerConfigurationMessageFormat,
+    string CheckingServerConfiguration,
+    string WaitingForServerConfigurationConsent,
+    string EnablingServerConfiguration,
+    string InstallingPublicKey,
+    string VerifyingPrivateKey,
+    string RollingBackServerConfiguration,
     string CheckingOpenSsh,
     string OpenSshInstalled,
     string InstallOpenSsh,
     string OpenSshCheckFailed,
     string OpenSshInstallFailed,
-    string OpenSshInstallCancelled);
+    string OpenSshInstallCancelled)
+{
+    public string FailureLabel(SetupFailureKind kind) => kind switch
+    {
+        SetupFailureKind.ServerConfigurationInspection =>
+            LanguageChoice == "EN" ? "Server SSH configuration check failed" : "服务器 SSH 配置检测失败",
+        SetupFailureKind.ServerConfigurationRootRequired =>
+            LanguageChoice == "EN" ? "Automatic repair requires the root account" : "自动修复需要 root 账号",
+        SetupFailureKind.ServerConfigurationDeclined =>
+            LanguageChoice == "EN" ? "Server SSH repair was cancelled" : "服务器 SSH 修复已取消",
+        SetupFailureKind.ServerConfigurationApply =>
+            LanguageChoice == "EN" ? "Server SSH configuration repair failed" : "服务器 SSH 配置修复失败",
+        SetupFailureKind.PublicKeyInstallation =>
+            LanguageChoice == "EN" ? "Public-key installation failed" : "公钥写入失败",
+        SetupFailureKind.PrivateKeyVerification =>
+            LanguageChoice == "EN" ? "Private-key verification failed" : "私钥验证失败",
+        SetupFailureKind.Rollback =>
+            LanguageChoice == "EN"
+                ? "SSH configuration rollback failed; manual recovery may be required"
+                : "SSH 配置回滚失败，可能需要手动恢复",
+        _ => FailedPrefix.TrimEnd()
+    };
+}
 
 public static class UiTextCatalog
 {
@@ -54,12 +86,20 @@ public static class UiTextCatalog
             "Failed: ",
             "Confirm server",
             "First connection to server {0}.\r\n\r\nServer SHA-256 key fingerprint:\r\n{1}\r\n\r\nTrust this server for this operation only?",
+            "Enable SSH public-key authentication",
+            "SSHKEY detected PubkeyAuthentication no on server {0}.\r\n\r\nDetected setting: {1}\r\n\r\nSSHKEY will validate the SSH configuration and reload SSH. Password login will not be disabled. If setup fails, the change will be rolled back.\r\n\r\nContinue?",
+            "Checking server SSH configuration...",
+            "Waiting for confirmation to repair server SSH...",
+            "Enabling server SSH public-key authentication...",
+            "Installing the public key...",
+            "Verifying the private key...",
+            "Rolling back server SSH configuration...",
             "Checking OpenSSH…",
             "✓ OpenSSH installed",
             "Install OpenSSH",
             "OpenSSH check failed",
             "OpenSSH installation failed — retry",
-            "OpenSSH installation was cancelled — retry" )
+            "OpenSSH installation was cancelled — retry")
         : new UiText(
             "中文",
             "SSHKEY   //   SSH密钥设置",
@@ -79,6 +119,14 @@ public static class UiTextCatalog
             "失败：",
             "确认服务器",
             "首次连接服务器 {0}。\r\n\r\n服务器 SHA-256 密钥指纹：\r\n{1}\r\n\r\n是否仅在本次操作中信任此服务器？",
+            "启用 SSH 公钥认证",
+            "SSHKEY 检测到服务器 {0} 的 PubkeyAuthentication no。\r\n\r\n检测到的设置：{1}\r\n\r\nSSHKEY 将验证 SSH 配置并重新加载 SSH，不会禁用密码登录。如果设置失败，将回滚配置。\r\n\r\n是否继续？",
+            "正在检查服务器 SSH 配置...",
+            "等待确认修复服务器 SSH...",
+            "正在启用服务器 SSH 公钥认证...",
+            "正在写入公钥...",
+            "正在验证私钥...",
+            "正在回滚服务器 SSH 配置...",
             "检测 OpenSSH…",
             "✓ OpenSSH 已安装",
             "一键安装 OpenSSH",

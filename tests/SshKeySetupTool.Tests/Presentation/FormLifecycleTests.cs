@@ -75,9 +75,12 @@ public sealed class FormLifecycleTests
             form.Show();
 
             Find<Button>(form, "generateButton").PerformClick();
-            Application.DoEvents();
+            var statusTextBox = Find<TextBox>(form, "statusTextBox");
+            PumpUntil(() => statusTextBox.Text.Contains(
+                "Windows OpenSSH Client is required",
+                StringComparison.Ordinal));
 
-            var status = Find<TextBox>(form, "statusTextBox").Text;
+            var status = statusTextBox.Text;
             Assert.Contains("Windows OpenSSH Client is required", status);
             Assert.Contains("Optional Features", status);
             Assert.Empty(Find<TextBox>(form, "passwordTextBox").Text);
@@ -98,6 +101,30 @@ public sealed class FormLifecycleTests
 
             Assert.False(openSsh.Enabled);
             Assert.Contains("检测失败", openSsh.Text);
+        });
+    }
+
+    [Fact]
+    public void SetupProgressIsLocalizedAgainWhenLanguageChanges()
+    {
+        RunInSta(() =>
+        {
+            var setupService = new ProgressReportingSetupService();
+            using var form = new Form1(setupService);
+            PopulateRequiredFields(form);
+            form.ShowInTaskbar = false;
+            form.Show();
+
+            Find<Button>(form, "generateButton").PerformClick();
+            var status = Find<TextBox>(form, "statusTextBox");
+            PumpUntil(() => status.Text.Contains("服务器 SSH 配置", StringComparison.Ordinal));
+
+            var language = Find<ComboBox>(form, "languageComboBox");
+            language.SelectedItem = "EN";
+            PumpUntil(() => status.Text.Contains("Checking server SSH configuration", StringComparison.Ordinal));
+
+            setupService.Release();
+            PumpUntil(() => setupService.Finished);
         });
     }
 
@@ -191,6 +218,34 @@ public sealed class FormLifecycleTests
                 await _release.Task;
                 cancellationToken.ThrowIfCancellationRequested();
                 return new SetupResult(true, "test", request.PrivateKeyPath);
+            }
+            finally
+            {
+                Finished = true;
+            }
+        }
+
+        public void Release() => _release.TrySetResult();
+    }
+
+    private sealed class ProgressReportingSetupService : IKeySetupService
+    {
+        private readonly TaskCompletionSource _release =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public bool Finished { get; private set; }
+
+        public async Task<SetupResult> RunAsync(
+            SetupRequest request,
+            Func<SetupRequest, SshServerConfigurationProbe, bool> confirmServerConfiguration,
+            IProgress<SetupProgress>? progress,
+            CancellationToken cancellationToken)
+        {
+            progress?.Report(new(SetupPhase.CheckingServerConfiguration));
+            try
+            {
+                await _release.Task;
+                return new SetupResult(false, "test");
             }
             finally
             {
