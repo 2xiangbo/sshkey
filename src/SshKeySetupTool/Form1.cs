@@ -23,6 +23,7 @@ public partial class Form1 : Form
     private Task? _setupTask;
     private bool _closeRequested;
     private bool _allowClose;
+    private bool _manualRecoveryRequired;
     private UiLanguage _language = UiLanguage.Chinese;
     private OpenSshClientStatus? _openSshStatus;
     private bool _openSshOperationInProgress = true;
@@ -100,6 +101,7 @@ public partial class Form1 : Form
         generateButton.Enabled = false;
         connectionDetailsTextBox.Clear();
         _latestSetupPhase = null;
+        _manualRecoveryRequired = false;
         SetLocalizedStatus(text => text.Working, WorkingColor);
 
         try
@@ -123,6 +125,7 @@ public partial class Form1 : Form
             }
             else
             {
+                _manualRecoveryRequired = result.FailureKind == SetupFailureKind.Rollback;
                 SetLocalizedStatus(
                     text => FormatFailure(text, result),
                     ErrorColor);
@@ -214,6 +217,13 @@ public partial class Form1 : Form
         }
         catch (OperationCanceledException)
         {
+        }
+
+        if (_manualRecoveryRequired)
+        {
+            _closeRequested = false;
+            generateButton.Enabled = true;
+            return;
         }
 
         _allowClose = true;

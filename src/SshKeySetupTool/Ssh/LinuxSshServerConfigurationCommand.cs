@@ -40,13 +40,15 @@ is_enabled() {
     grep -qx yes
 }
 reload_sshd() {
-  if command -v systemctl >/dev/null 2>&1; then
-    systemctl reload sshd >/dev/null 2>&1 || systemctl reload ssh >/dev/null 2>&1
-  elif command -v service >/dev/null 2>&1; then
-    service sshd reload >/dev/null 2>&1 || service ssh reload >/dev/null 2>&1
-  else
-    return 1
+  if command -v systemctl >/dev/null 2>&1 &&
+     (systemctl reload sshd >/dev/null 2>&1 || systemctl reload ssh >/dev/null 2>&1); then
+    return 0
   fi
+  if command -v service >/dev/null 2>&1 &&
+     (service sshd reload >/dev/null 2>&1 || service ssh reload >/dev/null 2>&1); then
+    return 0
+  fi
+  return 1
 }
 drop_in_tmp=''
 main_tmp=''
@@ -243,13 +245,15 @@ sshd="$(command -v sshd 2>/dev/null || true)"
 [ -n "$sshd" ] || [ ! -x /usr/sbin/sshd ] || sshd=/usr/sbin/sshd
 [ -n "$sshd" ] || { printf '%s\n' 'SSHKEY_ERROR sshd-not-found'; exit 41; }
 reload_sshd() {
-  if command -v systemctl >/dev/null 2>&1; then
-    systemctl reload sshd >/dev/null 2>&1 || systemctl reload ssh >/dev/null 2>&1
-  elif command -v service >/dev/null 2>&1; then
-    service sshd reload >/dev/null 2>&1 || service ssh reload >/dev/null 2>&1
-  else
-    return 1
+  if command -v systemctl >/dev/null 2>&1 &&
+     (systemctl reload sshd >/dev/null 2>&1 || systemctl reload ssh >/dev/null 2>&1); then
+    return 0
   fi
+  if command -v service >/dev/null 2>&1 &&
+     (service sshd reload >/dev/null 2>&1 || service ssh reload >/dev/null 2>&1); then
+    return 0
+  fi
+  return 1
 }
 recovered=false
 if [ -f "$main_backup" ]; then
@@ -298,13 +302,15 @@ sshd="$(command -v sshd 2>/dev/null || true)"
 [ -n "$sshd" ] || [ ! -x /usr/sbin/sshd ] || sshd=/usr/sbin/sshd
 [ -n "$sshd" ] || { printf '%s\n' 'SSHKEY_ERROR sshd-not-found'; exit 41; }
 reload_sshd() {
-  if command -v systemctl >/dev/null 2>&1; then
-    systemctl reload sshd >/dev/null 2>&1 || systemctl reload ssh >/dev/null 2>&1
-  elif command -v service >/dev/null 2>&1; then
-    service sshd reload >/dev/null 2>&1 || service ssh reload >/dev/null 2>&1
-  else
-    return 1
+  if command -v systemctl >/dev/null 2>&1 &&
+     (systemctl reload sshd >/dev/null 2>&1 || systemctl reload ssh >/dev/null 2>&1); then
+    return 0
   fi
+  if command -v service >/dev/null 2>&1 &&
+     (service sshd reload >/dev/null 2>&1 || service ssh reload >/dev/null 2>&1); then
+    return 0
+  fi
+  return 1
 }
 {{restore}}
 "$sshd" -t 2>/dev/null

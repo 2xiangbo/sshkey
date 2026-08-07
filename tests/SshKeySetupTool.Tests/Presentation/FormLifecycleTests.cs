@@ -105,6 +105,32 @@ public sealed class FormLifecycleTests
     }
 
     [Fact]
+    public void ClosingAfterRollbackFailureKeepsRecoveryDetailsVisible()
+    {
+        RunInSta(() =>
+        {
+            var setupService = new RollbackFailureAfterCancellationSetupService();
+            using var form = new Form1(setupService);
+            PopulateRequiredFields(form);
+            form.ShowInTaskbar = false;
+            form.Show();
+            Find<Button>(form, "generateButton").PerformClick();
+            PumpUntil(() => setupService.Started);
+
+            Find<Button>(form, "closeButton").PerformClick();
+            PumpUntil(() => setupService.Finished);
+
+            Assert.False(form.IsDisposed);
+            var status = Find<TextBox>(form, "statusTextBox").Text;
+            Assert.Contains("Remote backup", status, StringComparison.Ordinal);
+            Assert.Contains("sshd_config.sshkey-setup-operation.bak", status, StringComparison.Ordinal);
+
+            Find<Button>(form, "closeButton").PerformClick();
+            PumpUntil(() => form.IsDisposed);
+        });
+    }
+
+    [Fact]
     public void SetupProgressIsLocalizedAgainWhenLanguageChanges()
     {
         RunInSta(() =>
@@ -226,6 +252,37 @@ public sealed class FormLifecycleTests
         }
 
         public void Release() => _release.TrySetResult();
+    }
+
+    private sealed class RollbackFailureAfterCancellationSetupService : IKeySetupService
+    {
+        private readonly TaskCompletionSource _release =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public bool Started { get; private set; }
+        public bool Finished { get; private set; }
+
+        public async Task<SetupResult> RunAsync(
+            SetupRequest request,
+            Func<SetupRequest, SshServerConfigurationProbe, bool> confirmServerConfiguration,
+            IProgress<SetupProgress>? progress,
+            CancellationToken cancellationToken)
+        {
+            Started = true;
+            using var registration = cancellationToken.Register(() => _release.TrySetResult());
+            try
+            {
+                await _release.Task;
+                return new SetupResult(
+                    false,
+                    "Remote backup: /etc/ssh/sshd_config.sshkey-setup-operation.bak",
+                    FailureKind: SetupFailureKind.Rollback);
+            }
+            finally
+            {
+                Finished = true;
+            }
+        }
     }
 
     private sealed class ProgressReportingSetupService : IKeySetupService

@@ -51,6 +51,34 @@ public sealed class LinuxSshServerConfigurationCommandTests
         Assert.Contains("SSHKEY_APPLIED", command);
     }
 
+    [Fact]
+    public void ReloadHelpersFallThroughToServiceWhenSystemctlCannotReload()
+    {
+        var commands = new[]
+        {
+            LinuxSshServerConfigurationCommand.BuildApply(
+                "0123456789abcdef0123456789abcdef"),
+            LinuxSshServerConfigurationCommand.BuildRecovery(
+                "0123456789abcdef0123456789abcdef"),
+            LinuxSshServerConfigurationCommand.BuildRollback(
+                new SshServerConfigurationChange(
+                    "0123456789abcdef0123456789abcdef",
+                    SshServerConfigurationStrategy.MainConfiguration,
+                    false))
+        };
+
+        Assert.All(commands, command =>
+        {
+            Assert.Contains(
+                "if command -v systemctl >/dev/null 2>&1 &&",
+                command);
+            Assert.Contains(
+                "if command -v service >/dev/null 2>&1 &&",
+                command);
+            Assert.DoesNotContain("elif command -v service", command);
+        });
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("../escape")]
