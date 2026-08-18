@@ -1,4 +1,5 @@
 using SshKeySetupTool.Domain;
+using SshKeySetupTool.History;
 using SshKeySetupTool.Security;
 using SshKeySetupTool.Services;
 using SshKeySetupTool.Ssh;
@@ -151,6 +152,54 @@ public sealed class FormLifecycleTests
 
             setupService.Release();
             PumpUntil(() => setupService.Finished);
+        });
+    }
+
+    [Fact]
+    public void SuccessfulSetup_RecordsOnlySafeGenerationHistoryFields()
+    {
+        RunInSta(() =>
+        {
+            var history = new InMemoryHistoryStore();
+            using var form = new Form1(
+                new SuccessfulSetupService(),
+                new InstalledOpenSshManager(),
+                history);
+            PopulateRequiredFields(form);
+            form.ShowInTaskbar = false;
+            form.Show();
+
+            Find<Button>(form, "generateButton").PerformClick();
+            PumpUntil(() => history.Entries.Count == 1);
+
+            var entry = Assert.Single(history.Entries);
+            Assert.Equal(GenerationHistoryOutcome.Succeeded, entry.Outcome);
+            Assert.Equal("203.0.113.10", entry.Host);
+            Assert.Equal("root", entry.Username);
+            Assert.DoesNotContain(
+                typeof(GenerationHistoryEntry).GetProperties(),
+                property => property.Name.Contains("password", StringComparison.OrdinalIgnoreCase));
+        });
+    }
+
+    [Fact]
+    public void FailedSetup_RecordsFailedGenerationHistory()
+    {
+        RunInSta(() =>
+        {
+            var history = new InMemoryHistoryStore();
+            using var form = new Form1(
+                new ImmediateSetupService(),
+                new InstalledOpenSshManager(),
+                history);
+            PopulateRequiredFields(form);
+            form.ShowInTaskbar = false;
+            form.Show();
+
+            Find<Button>(form, "generateButton").PerformClick();
+            PumpUntil(() => history.Entries.Count == 1);
+
+            Assert.Equal(GenerationHistoryOutcome.Failed, Assert.Single(history.Entries).Outcome);
         });
     }
 
@@ -313,6 +362,16 @@ public sealed class FormLifecycleTests
         public void Release() => _release.TrySetResult();
     }
 
+    private sealed class SuccessfulSetupService : IKeySetupService
+    {
+        public Task<SetupResult> RunAsync(
+            SetupRequest request,
+            Func<SetupRequest, SshServerConfigurationProbe, bool> confirmServerConfiguration,
+            IProgress<SetupProgress>? progress,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(new SetupResult(true, "test", request.PrivateKeyPath));
+    }
+
     private sealed class FakeKeyMaterialFactory : IKeyMaterialFactory
     {
         public KeyMaterial Create(string privateKeyPath) =>
@@ -336,5 +395,25 @@ public sealed class FormLifecycleTests
 
         public Task<OpenSshClientStatus> InstallAsync(CancellationToken cancellationToken) =>
             throw new Xunit.Sdk.XunitException("Installation must not be offered after a check failure.");
+    }
+
+    private sealed class InstalledOpenSshManager : IOpenSshClientManager
+    {
+        public Task<OpenSshClientStatus> CheckAsync(CancellationToken cancellationToken) =>
+            Task.FromResult(OpenSshClientStatus.Installed);
+
+        public Task<OpenSshClientStatus> InstallAsync(CancellationToken cancellationToken) =>
+            Task.FromResult(OpenSshClientStatus.Installed);
+    }
+
+    private sealed class InMemoryHistoryStore : IGenerationHistoryStore
+    {
+        public List<GenerationHistoryEntry> Entries { get; } = [];
+
+        public IReadOnlyList<GenerationHistoryEntry> Read() => Entries;
+
+        public void Append(GenerationHistoryEntry entry) => Entries.Add(entry);
+
+        public void Clear() => Entries.Clear();
     }
 }

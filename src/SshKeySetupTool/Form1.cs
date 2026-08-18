@@ -1,4 +1,5 @@
 using SshKeySetupTool.Domain;
+using SshKeySetupTool.History;
 using SshKeySetupTool.Presentation;
 using SshKeySetupTool.Security;
 using SshKeySetupTool.Services;
@@ -18,6 +19,7 @@ public partial class Form1 : Form
 
     private readonly IKeySetupService _keySetupService;
     private readonly IOpenSshClientManager _openSshClientManager;
+    private readonly IGenerationHistoryStore _generationHistoryStore;
     private Icon? _applicationIcon;
     private CancellationTokenSource? _setupCancellation;
     private Task? _setupTask;
@@ -32,26 +34,35 @@ public partial class Form1 : Form
     private SetupPhase? _latestSetupPhase;
 
     public Form1()
-        : this(null, useDefaultService: true)
+        : this(null, useDefaultService: true, null, null)
     {
     }
 
     internal Form1(IKeySetupService keySetupService)
-        : this(keySetupService, useDefaultService: false, null)
+        : this(keySetupService, useDefaultService: false, null, null)
     {
     }
 
     internal Form1(
         IKeySetupService keySetupService,
         IOpenSshClientManager openSshClientManager)
-        : this(keySetupService, useDefaultService: false, openSshClientManager)
+        : this(keySetupService, useDefaultService: false, openSshClientManager, null)
+    {
+    }
+
+    internal Form1(
+        IKeySetupService keySetupService,
+        IOpenSshClientManager openSshClientManager,
+        IGenerationHistoryStore generationHistoryStore)
+        : this(keySetupService, useDefaultService: false, openSshClientManager, generationHistoryStore)
     {
     }
 
     private Form1(
         IKeySetupService? keySetupService,
         bool useDefaultService,
-        IOpenSshClientManager? openSshClientManager = null)
+        IOpenSshClientManager? openSshClientManager,
+        IGenerationHistoryStore? generationHistoryStore)
     {
         InitializeComponent();
         _applicationIcon = AppIcon.Load();
@@ -65,6 +76,7 @@ public partial class Form1 : Form
                 new WindowsOpenSshSetupClient(ConfirmHostKey))
             : keySetupService ?? throw new ArgumentNullException(nameof(keySetupService));
         _openSshClientManager = openSshClientManager ?? new WindowsOpenSshClientManager();
+        _generationHistoryStore = generationHistoryStore ?? JsonGenerationHistoryStore.CreateDefault();
         languageComboBox.SelectedItem = UiTextCatalog.For(_language).LanguageChoice;
         ApplyLanguage();
     }
@@ -103,10 +115,10 @@ public partial class Form1 : Form
         _latestSetupPhase = null;
         _manualRecoveryRequired = false;
         SetLocalizedStatus(text => text.Working, WorkingColor);
+        var request = BuildRequest();
 
         try
         {
-            var request = BuildRequest();
             var progress = new Progress<SetupProgress>(HandleSetupProgress);
             var result = await _keySetupService.RunAsync(
                 request,
@@ -122,6 +134,7 @@ public partial class Form1 : Form
                         ? text => text.CompletedCopied
                         : text => text.CompletedNotCopied,
                     SuccessColor);
+                RecordHistory(request, GenerationHistoryOutcome.Succeeded, "Completed");
             }
             else
             {
@@ -129,15 +142,18 @@ public partial class Form1 : Form
                 SetLocalizedStatus(
                     text => FormatFailure(text, result),
                     ErrorColor);
+                RecordHistory(request, GenerationHistoryOutcome.Failed, "Failed");
             }
         }
         catch (OperationCanceledException)
         {
             SetLocalizedStatus(text => text.Cancelled, Color.FromArgb(127, 149, 163));
+            RecordHistory(request, GenerationHistoryOutcome.Cancelled, "Cancelled");
         }
         catch (Exception exception)
         {
             SetLocalizedStatus(text => text.FailedPrefix + exception.Message, ErrorColor);
+            RecordHistory(request, GenerationHistoryOutcome.Failed, "Failed");
         }
         finally
         {
@@ -169,6 +185,8 @@ public partial class Form1 : Form
         Shown += Form1_Shown;
         languageComboBox.SelectedIndexChanged += languageComboBox_SelectedIndexChanged;
         openSshButton.Click += openSshButton_Click;
+        browsePrivateKeyPathButton.Click += browsePrivateKeyPathButton_Click;
+        generationHistoryButton.Click += generationHistoryButton_Click;
         projectLinkLabel.LinkClicked += externalLinkLabel_LinkClicked;
         xxCodexLinkLabel.LinkClicked += externalLinkLabel_LinkClicked;
     }
@@ -297,6 +315,8 @@ public partial class Form1 : Form
         statusLabel.Text = text.Status;
         connectionDetailsLabel.Text = text.ConnectionDetails;
         generateButton.Text = text.GenerateAndInstall;
+        browsePrivateKeyPathButton.Text = text.BrowsePrivateKeyPath;
+        generationHistoryButton.Text = text.GenerationHistory;
 
         if (_statusTextFactory is null)
         {
@@ -443,12 +463,54 @@ public partial class Form1 : Form
         }
     }
 
+    private void browsePrivateKeyPathButton_Click(object? sender, EventArgs e)
+    {
+        using var dialog = new FolderBrowserDialog
+        {
+            UseDescriptionForTitle = true,
+            Description = CurrentText.PrivateKeyPath
+        };
+        if (dialog.ShowDialog(this) == DialogResult.OK)
+        {
+            privateKeyPathTextBox.Text = SetupFormInput.GetSuggestedPrivateKeyPathInDirectory(
+                dialog.SelectedPath);
+        }
+    }
+
+    private void generationHistoryButton_Click(object? sender, EventArgs e)
+    {
+        using var dialog = new GenerationHistoryForm(_generationHistoryStore, _language);
+        dialog.ShowDialog(this);
+    }
+
     private Domain.SetupRequest BuildRequest() => SetupFormInput.BuildRequest(
         hostTextBox.Text,
         portTextBox.Text,
         usernameTextBox.Text,
         passwordTextBox.Text,
         privateKeyPathTextBox.Text);
+
+    private void RecordHistory(
+        SetupRequest request,
+        GenerationHistoryOutcome outcome,
+        string message)
+    {
+        try
+        {
+            _generationHistoryStore.Append(new GenerationHistoryEntry(
+                DateTimeOffset.UtcNow,
+                request.Host,
+                request.Port,
+                request.Username,
+                request.PrivateKeyPath,
+                outcome,
+                message));
+        }
+        catch
+        {
+            // History must never interfere with an SSH setup result.
+        }
+    }
 
     private static bool TryCopyToClipboard(string text)
     {

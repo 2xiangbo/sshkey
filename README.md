@@ -16,7 +16,8 @@
 ## English
 
 SSHKEY simplifies SSH key setup for remote development. Enter the server IP,
-port, username, password, and private-key path; SSHKEY handles the rest.
+port, username, password, and private-key path; SSHKEY handles the rest. Use
+**Browse...** to choose another directory for the private key.
 
 It verifies the server fingerprint, creates an Ed25519 key pair, installs the
 public key, validates key-based authentication, and generates ready-to-copy SSH
@@ -40,6 +41,7 @@ administrator-required result instead of an automatic mutation.
 - Idempotent public-key installation in `authorized_keys`
 - Key-based login verification
 - Ready-to-copy connection details for AI coding tools
+- Local generation history with server, account, key destination, and result
 - Standalone Windows executable; no Python installation required
 
 ### Works With
@@ -66,6 +68,10 @@ Aider, OpenCode, Qwen Code, Kiro, Zed, and other SSH-capable AI coding tools.
    leave the server unchanged.
 7. Copy the generated connection details into your AI coding tool.
 
+Select **Generation history** to review prior attempts. History records the
+time, server, port, username, private-key destination, and generic result only.
+Passwords, private-key contents, and connection details are never saved.
+
 The password is used only for the initial SSH connection and is cleared from
 the window after the operation. It is not saved to disk.
 
@@ -84,7 +90,7 @@ The standalone executable is created in `outputs\`.
 
 SSHKEY 是一款轻量、易用的 Windows SSH 密钥配置工具，可帮助用户快速为远程服务器生成并安装 SSH 密钥。
 
-只需输入服务器 IP、端口、账号、密码和私钥保存路径，SSHKEY 即可完成服务器指纹确认、Ed25519 密钥生成、公钥写入、密钥登录验证，并自动生成可直接复制使用的 SSH 连接信息。
+只需输入服务器 IP、端口、账号、密码和私钥保存路径，SSHKEY 即可完成服务器指纹确认、Ed25519 密钥生成、公钥写入、密钥登录验证，并自动生成可直接复制使用的 SSH 连接信息。可点击**浏览...**选择其他私钥保存目录。
 
 当服务器的有效配置为 `PubkeyAuthentication no` 时，SSHKEY 仅会对使用 `root`
 账号的操作显示明确的修复确认框。确认后，SSHKEY 只启用公钥认证，验证 `sshd`
@@ -101,6 +107,7 @@ SSHKEY 是一款轻量、易用的 Windows SSH 密钥配置工具，可帮助用
 - 幂等写入服务器的 `authorized_keys`
 - 自动验证密钥登录
 - 生成适用于 AI 编程工具的连接信息
+- 本地保存生成历史，便于查看服务器、账号、私钥路径和结果
 - 独立 Windows EXE，无需安装 Python
 
 ### 适用工具
@@ -122,6 +129,8 @@ SSHKEY 是一款轻量、易用的 Windows SSH 密钥配置工具，可帮助用
 6. 如果服务器报告 `PubkeyAuthentication no` 且账号为 `root`，阅读修复提示并点击**确定**继续，
    或点击**取消**保持服务器不变。
 7. 将生成的连接信息复制到 AI 编程工具中。
+
+点击**生成历史**可查看之前的操作。历史只记录时间、服务器、端口、账号、私钥保存路径和通用结果；不会保存密码、私钥内容或连接信息。
 
 密码仅用于首次 SSH 连接，操作完成后会从窗口中清空，不会保存到磁盘。
 

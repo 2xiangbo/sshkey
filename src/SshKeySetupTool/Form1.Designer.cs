@@ -51,6 +51,8 @@ partial class Form1
         privateKeyPathInputPanel = new Panel();
         statusInputPanel = new Panel();
         generateButton = new Button();
+        browsePrivateKeyPathButton = new Button();
+        generationHistoryButton = new Button();
         languageComboBox = new ComboBox();
         openSshButton = new Button();
         projectLinkLabel = new LinkLabel();
@@ -163,7 +165,7 @@ partial class Form1
         passwordLabel.AutoSize = true;
         passwordLabel.Font = new Font("Segoe UI", 8.5F, FontStyle.Regular, GraphicsUnit.Point);
         passwordLabel.ForeColor = secondaryTextColor;
-        passwordLabel.Location = new Point(347, 114);
+        passwordLabel.Location = new Point(194, 114);
         passwordLabel.Name = "passwordLabel";
         passwordLabel.Size = new Size(28, 15);
         passwordLabel.TabIndex = 5;
@@ -234,7 +236,7 @@ partial class Form1
         usernameTextBox.ForeColor = primaryTextColor;
         usernameTextBox.Location = new Point(9, 5);
         usernameTextBox.Name = "usernameTextBox";
-        usernameTextBox.Size = new Size(293, 22);
+        usernameTextBox.Size = new Size(140, 22);
         usernameTextBox.TabIndex = 2;
         //
         // passwordTextBox
@@ -245,7 +247,7 @@ partial class Form1
         passwordTextBox.ForeColor = primaryTextColor;
         passwordTextBox.Location = new Point(9, 5);
         passwordTextBox.Name = "passwordTextBox";
-        passwordTextBox.Size = new Size(293, 22);
+        passwordTextBox.Size = new Size(180, 22);
         passwordTextBox.TabIndex = 3;
         passwordTextBox.UseSystemPasswordChar = true;
         //
@@ -257,7 +259,7 @@ partial class Form1
         privateKeyPathTextBox.ForeColor = primaryTextColor;
         privateKeyPathTextBox.Location = new Point(9, 5);
         privateKeyPathTextBox.Name = "privateKeyPathTextBox";
-        privateKeyPathTextBox.Size = new Size(620, 22);
+        privateKeyPathTextBox.Size = new Size(514, 22);
         privateKeyPathTextBox.TabIndex = 4;
         //
         // statusTextBox
@@ -331,7 +333,7 @@ partial class Form1
         usernameInputPanel.Location = new Point(20, 132);
         usernameInputPanel.Name = "usernameInputPanel";
         usernameInputPanel.Padding = new Padding(1);
-        usernameInputPanel.Size = new Size(313, 32);
+        usernameInputPanel.Size = new Size(160, 32);
         usernameInputPanel.TabIndex = 3;
         //
         // passwordInputPanel
@@ -339,10 +341,10 @@ partial class Form1
         passwordInputPanel.BackColor = inputBackColor;
         passwordInputPanel.BorderStyle = BorderStyle.FixedSingle;
         passwordInputPanel.Controls.Add(passwordTextBox);
-        passwordInputPanel.Location = new Point(347, 132);
+        passwordInputPanel.Location = new Point(194, 132);
         passwordInputPanel.Name = "passwordInputPanel";
         passwordInputPanel.Padding = new Padding(1);
-        passwordInputPanel.Size = new Size(313, 32);
+        passwordInputPanel.Size = new Size(200, 32);
         passwordInputPanel.TabIndex = 4;
         //
         // privateKeyPathInputPanel
@@ -353,7 +355,7 @@ partial class Form1
         privateKeyPathInputPanel.Location = new Point(20, 188);
         privateKeyPathInputPanel.Name = "privateKeyPathInputPanel";
         privateKeyPathInputPanel.Padding = new Padding(1);
-        privateKeyPathInputPanel.Size = new Size(640, 32);
+        privateKeyPathInputPanel.Size = new Size(534, 32);
         privateKeyPathInputPanel.TabIndex = 5;
         //
         // statusInputPanel
@@ -385,6 +387,38 @@ partial class Form1
         generateButton.Text = "\u751f\u6210\u5e76\u5199\u5165\u670d\u52a1\u5668";
         generateButton.UseVisualStyleBackColor = false;
         generateButton.Click += new EventHandler(generateButton_Click);
+        //
+        // browsePrivateKeyPathButton
+        //
+        browsePrivateKeyPathButton.BackColor = Color.FromArgb(38, 55, 71);
+        browsePrivateKeyPathButton.FlatAppearance.BorderSize = 0;
+        browsePrivateKeyPathButton.FlatAppearance.MouseDownBackColor = Color.FromArgb(28, 43, 57);
+        browsePrivateKeyPathButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(56, 75, 91);
+        browsePrivateKeyPathButton.FlatStyle = FlatStyle.Flat;
+        browsePrivateKeyPathButton.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point);
+        browsePrivateKeyPathButton.ForeColor = primaryTextColor;
+        browsePrivateKeyPathButton.Location = new Point(568, 188);
+        browsePrivateKeyPathButton.Name = "browsePrivateKeyPathButton";
+        browsePrivateKeyPathButton.Size = new Size(92, 32);
+        browsePrivateKeyPathButton.TabIndex = 6;
+        browsePrivateKeyPathButton.Text = "\u6d4f\u89c8...";
+        browsePrivateKeyPathButton.UseVisualStyleBackColor = false;
+        //
+        // generationHistoryButton
+        //
+        generationHistoryButton.BackColor = Color.FromArgb(38, 55, 71);
+        generationHistoryButton.FlatAppearance.BorderSize = 0;
+        generationHistoryButton.FlatAppearance.MouseDownBackColor = Color.FromArgb(28, 43, 57);
+        generationHistoryButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(56, 75, 91);
+        generationHistoryButton.FlatStyle = FlatStyle.Flat;
+        generationHistoryButton.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point);
+        generationHistoryButton.ForeColor = primaryTextColor;
+        generationHistoryButton.Location = new Point(408, 132);
+        generationHistoryButton.Name = "generationHistoryButton";
+        generationHistoryButton.Size = new Size(252, 32);
+        generationHistoryButton.TabIndex = 5;
+        generationHistoryButton.Text = "\u751f\u6210\u5386\u53f2";
+        generationHistoryButton.UseVisualStyleBackColor = false;
         //
         // languageComboBox
         //
@@ -449,6 +483,8 @@ partial class Form1
         Controls.Add(xxCodexLinkLabel);
         Controls.Add(projectLinkLabel);
         Controls.Add(languageComboBox);
+        Controls.Add(generationHistoryButton);
+        Controls.Add(browsePrivateKeyPathButton);
         Controls.Add(generateButton);
         Controls.Add(connectionDetailsTextBox);
         Controls.Add(statusInputPanel);
@@ -511,6 +547,8 @@ partial class Form1
     private Panel privateKeyPathInputPanel;
     private Panel statusInputPanel;
     private Button generateButton;
+    private Button browsePrivateKeyPathButton;
+    private Button generationHistoryButton;
     private ComboBox languageComboBox;
     private Button openSshButton;
     private LinkLabel projectLinkLabel;

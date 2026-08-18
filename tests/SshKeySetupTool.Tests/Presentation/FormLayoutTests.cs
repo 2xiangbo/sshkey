@@ -34,6 +34,8 @@ public sealed class FormLayoutTests
             var passwordInput = Find<Panel>(form, "passwordInputPanel");
             var privateKeyPathInput = Find<Panel>(form, "privateKeyPathInputPanel");
             var statusInput = Find<Panel>(form, "statusInputPanel");
+            var browsePrivateKeyPath = Find<Button>(form, "browsePrivateKeyPathButton");
+            var generationHistory = Find<Button>(form, "generationHistoryButton");
             var longestCompletionStatus = new[]
             {
                 UiTextCatalog.For(UiLanguage.Chinese).CompletedCopied,
@@ -76,8 +78,11 @@ public sealed class FormLayoutTests
             Assert.Equal(1, hostInput.Padding.Left);
             Assert.Equal(usernameInput.Top, passwordInput.Top);
             Assert.True(usernameInput.Left < passwordInput.Left);
-            Assert.Equal(usernameInput.Width, passwordInput.Width);
+            Assert.True(usernameInput.Width < passwordInput.Width);
+            Assert.True(generationHistory.Left > passwordInput.Right);
             Assert.True(privateKeyPathInput.Top > usernameInput.Bottom);
+            Assert.True(browsePrivateKeyPath.Left > privateKeyPathInput.Right);
+            Assert.True(browsePrivateKeyPath.Right <= form.ClientSize.Width - 20);
             Assert.True(statusInput.Left > connectionDetailsLabel.Right);
             Assert.True(statusInput.Top <= connectionDetailsLabel.Top);
             Assert.True(statusInput.Bottom > connectionDetailsLabel.Bottom);
