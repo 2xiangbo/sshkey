@@ -40,7 +40,22 @@ public sealed record UiText(
     string InstallOpenSsh,
     string OpenSshCheckFailed,
     string OpenSshInstallFailed,
-    string OpenSshInstallCancelled)
+    string OpenSshInstallCancelled,
+    string BrowsePrivateKeyPath,
+    string GenerationHistory,
+    string ClearHistory,
+    string ClearHistoryConfirmation,
+    string HistoryEmpty,
+    string HistoryTime,
+    string HistoryHost,
+    string HistoryPort,
+    string HistoryUsername,
+    string HistoryPrivateKeyPath,
+    string HistoryResult,
+    string HistoryMessage,
+    string HistorySucceeded,
+    string HistoryFailed,
+    string HistoryCancelled)
 {
     public string FailureLabel(SetupFailureKind kind) => kind switch
     {
@@ -99,7 +114,22 @@ public static class UiTextCatalog
             "Install OpenSSH",
             "OpenSSH check failed",
             "OpenSSH installation failed — retry",
-            "OpenSSH installation was cancelled — retry")
+            "OpenSSH installation was cancelled — retry",
+            "Browse...",
+            "Generation history",
+            "Clear history",
+            "Clear all generation history?",
+            "No generation history yet.",
+            "Time",
+            "Server",
+            "Port",
+            "Username",
+            "Private key path",
+            "Result",
+            "Message",
+            "Succeeded",
+            "Failed",
+            "Cancelled" )
         : new UiText(
             "中文",
             "SSHKEY   //   SSH密钥设置",
@@ -132,5 +162,20 @@ public static class UiTextCatalog
             "一键安装 OpenSSH",
             "OpenSSH 检测失败",
             "OpenSSH 安装失败，请重试",
-            "OpenSSH 安装已取消，请重试");
+            "OpenSSH 安装已取消，请重试",
+            "浏览...",
+            "生成历史",
+            "清空历史",
+            "确定清空全部生成历史吗？",
+            "暂无生成历史。",
+            "时间",
+            "服务器",
+            "端口",
+            "账号",
+            "私钥路径",
+            "结果",
+            "说明",
+            "成功",
+            "失败",
+            "已取消");
 }

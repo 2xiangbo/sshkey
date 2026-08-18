@@ -48,4 +48,23 @@ public sealed class SetupFormInputTests
             Directory.Delete(userProfilePath, recursive: true);
         }
     }
+
+    [Fact]
+    public void GetSuggestedPrivateKeyPathInDirectory_UsesAnAvailableCodexSpecificName()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        File.WriteAllText(Path.Combine(directory, "id_ed25519_codex"), "existing key");
+
+        try
+        {
+            var path = SetupFormInput.GetSuggestedPrivateKeyPathInDirectory(directory);
+
+            Assert.Equal(Path.Combine(directory, "id_ed25519_codex_2"), path);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
 }

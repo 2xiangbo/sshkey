@@ -7,10 +7,17 @@ public static class SetupFormInput
     public static string GetSuggestedPrivateKeyPath(string userProfilePath)
     {
         var sshDirectory = Path.Combine(userProfilePath, ".ssh");
+        return GetSuggestedPrivateKeyPathInDirectory(sshDirectory);
+    }
+
+    public static string GetSuggestedPrivateKeyPathInDirectory(string directory)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(directory);
+
         for (var suffix = 1; ; suffix++)
         {
             var fileName = suffix == 1 ? "id_ed25519_codex" : $"id_ed25519_codex_{suffix}";
-            var privateKeyPath = Path.Combine(sshDirectory, fileName);
+            var privateKeyPath = Path.Combine(directory, fileName);
             if (!IsOccupied(privateKeyPath) && !IsOccupied(privateKeyPath + ".pub"))
             {
                 return privateKeyPath;
