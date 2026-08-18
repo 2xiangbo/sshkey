@@ -67,11 +67,24 @@ public sealed class JsonGenerationHistoryStore : IGenerationHistoryStore
         File.WriteAllText(_historyPath, JsonSerializer.Serialize(entries));
     }
 
-    public void Clear()
+    public bool Clear()
     {
-        if (File.Exists(_historyPath))
+        try
         {
-            File.Delete(_historyPath);
+            if (File.Exists(_historyPath))
+            {
+                File.Delete(_historyPath);
+            }
+
+            return true;
+        }
+        catch (IOException)
+        {
+            return false;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return false;
         }
     }
 }

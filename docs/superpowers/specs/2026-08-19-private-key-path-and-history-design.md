@@ -19,8 +19,8 @@ to a compact field. The password field remains beside it. A localized
 
 Selecting the history button opens a modal history window. It shows entries in
 reverse chronological order with time, server, port, username, private-key
-path, result, and a non-sensitive message. The window provides a localized
-clear-history command with confirmation.
+path, and result. The window provides a localized clear-history command with
+confirmation.
 
 ## Persistence and Privacy
 
@@ -37,7 +37,6 @@ Each record contains only:
 - Username
 - Private-key destination path
 - Success, cancelled, or failed outcome
-- A non-sensitive status message
 
 Passwords, private-key bytes, public-key bytes, connection details, and full
 exception output are never persisted. The UI continues to clear the password

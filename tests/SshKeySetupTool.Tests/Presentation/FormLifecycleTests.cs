@@ -414,6 +414,10 @@ public sealed class FormLifecycleTests
 
         public void Append(GenerationHistoryEntry entry) => Entries.Add(entry);
 
-        public void Clear() => Entries.Clear();
+        public bool Clear()
+        {
+            Entries.Clear();
+            return true;
+        }
     }
 }

@@ -84,7 +84,6 @@ public sealed class GenerationHistoryForm : Form
         _historyGrid.Columns.Add("username", _text.HistoryUsername);
         _historyGrid.Columns.Add("privateKeyPath", _text.HistoryPrivateKeyPath);
         _historyGrid.Columns.Add("result", _text.HistoryResult);
-        _historyGrid.Columns.Add("message", _text.HistoryMessage);
     }
 
     private void RefreshHistory()
@@ -98,8 +97,7 @@ public sealed class GenerationHistoryForm : Form
                 entry.Port,
                 entry.Username,
                 entry.PrivateKeyPath,
-                OutcomeText(entry.Outcome),
-                entry.Message);
+                OutcomeText(entry.Outcome));
         }
 
         _emptyLabel.Visible = _historyGrid.Rows.Count == 0;
@@ -125,7 +123,17 @@ public sealed class GenerationHistoryForm : Form
             return;
         }
 
-        _store.Clear();
+        if (!_store.Clear())
+        {
+            MessageBox.Show(
+                this,
+                _text.HistoryClearFailed,
+                _text.GenerationHistory,
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+            return;
+        }
+
         RefreshHistory();
     }
 }

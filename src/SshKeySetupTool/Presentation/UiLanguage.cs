@@ -45,6 +45,7 @@ public sealed record UiText(
     string GenerationHistory,
     string ClearHistory,
     string ClearHistoryConfirmation,
+    string HistoryClearFailed,
     string HistoryEmpty,
     string HistoryTime,
     string HistoryHost,
@@ -52,7 +53,6 @@ public sealed record UiText(
     string HistoryUsername,
     string HistoryPrivateKeyPath,
     string HistoryResult,
-    string HistoryMessage,
     string HistorySucceeded,
     string HistoryFailed,
     string HistoryCancelled)
@@ -119,6 +119,7 @@ public static class UiTextCatalog
             "Generation history",
             "Clear history",
             "Clear all generation history?",
+            "Unable to clear generation history.",
             "No generation history yet.",
             "Time",
             "Server",
@@ -126,7 +127,6 @@ public static class UiTextCatalog
             "Username",
             "Private key path",
             "Result",
-            "Message",
             "Succeeded",
             "Failed",
             "Cancelled" )
@@ -167,6 +167,7 @@ public static class UiTextCatalog
             "生成历史",
             "清空历史",
             "确定清空全部生成历史吗？",
+            "无法清空生成历史。",
             "暂无生成历史。",
             "时间",
             "服务器",
@@ -174,7 +175,6 @@ public static class UiTextCatalog
             "账号",
             "私钥路径",
             "结果",
-            "说明",
             "成功",
             "失败",
             "已取消");

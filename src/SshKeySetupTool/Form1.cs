@@ -134,7 +134,7 @@ public partial class Form1 : Form
                         ? text => text.CompletedCopied
                         : text => text.CompletedNotCopied,
                     SuccessColor);
-                RecordHistory(request, GenerationHistoryOutcome.Succeeded, "Completed");
+                RecordHistory(request, GenerationHistoryOutcome.Succeeded);
             }
             else
             {
@@ -142,18 +142,18 @@ public partial class Form1 : Form
                 SetLocalizedStatus(
                     text => FormatFailure(text, result),
                     ErrorColor);
-                RecordHistory(request, GenerationHistoryOutcome.Failed, "Failed");
+                RecordHistory(request, GenerationHistoryOutcome.Failed);
             }
         }
         catch (OperationCanceledException)
         {
             SetLocalizedStatus(text => text.Cancelled, Color.FromArgb(127, 149, 163));
-            RecordHistory(request, GenerationHistoryOutcome.Cancelled, "Cancelled");
+            RecordHistory(request, GenerationHistoryOutcome.Cancelled);
         }
         catch (Exception exception)
         {
             SetLocalizedStatus(text => text.FailedPrefix + exception.Message, ErrorColor);
-            RecordHistory(request, GenerationHistoryOutcome.Failed, "Failed");
+            RecordHistory(request, GenerationHistoryOutcome.Failed);
         }
         finally
         {
@@ -492,8 +492,7 @@ public partial class Form1 : Form
 
     private void RecordHistory(
         SetupRequest request,
-        GenerationHistoryOutcome outcome,
-        string message)
+        GenerationHistoryOutcome outcome)
     {
         try
         {
@@ -503,8 +502,7 @@ public partial class Form1 : Form
                 request.Port,
                 request.Username,
                 request.PrivateKeyPath,
-                outcome,
-                message));
+                outcome));
         }
         catch
         {

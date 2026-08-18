@@ -19,8 +19,7 @@ public sealed class GenerationHistoryFormTests
                 22,
                 "root",
                 @"D:\keys\id_ed25519_codex",
-                GenerationHistoryOutcome.Succeeded,
-                "Completed"));
+                GenerationHistoryOutcome.Succeeded));
 
             using var form = new GenerationHistoryForm(store, UiLanguage.Chinese);
             var grid = Assert.IsType<DataGridView>(
@@ -28,6 +27,8 @@ public sealed class GenerationHistoryFormTests
 
             Assert.Equal("生成历史", form.Text);
             Assert.Contains("服务器", grid.Columns.Cast<DataGridViewColumn>()
+                .Select(column => column.HeaderText));
+            Assert.DoesNotContain("说明", grid.Columns.Cast<DataGridViewColumn>()
                 .Select(column => column.HeaderText));
             Assert.Contains("成功", grid.Rows.Cast<DataGridViewRow>()
                 .Select(row => row.Cells[5].Value));
@@ -67,6 +68,10 @@ public sealed class GenerationHistoryFormTests
 
         public void Append(GenerationHistoryEntry entry) => _entries.Add(entry);
 
-        public void Clear() => _entries.Clear();
+        public bool Clear()
+        {
+            _entries.Clear();
+            return true;
+        }
     }
 }

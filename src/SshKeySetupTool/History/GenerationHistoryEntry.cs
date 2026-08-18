@@ -13,5 +13,4 @@ public sealed record GenerationHistoryEntry(
     int Port,
     string Username,
     string PrivateKeyPath,
-    GenerationHistoryOutcome Outcome,
-    string Message);
+    GenerationHistoryOutcome Outcome);
