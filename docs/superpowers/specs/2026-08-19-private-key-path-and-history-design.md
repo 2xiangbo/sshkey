@@ -17,30 +17,29 @@ On the credential row, the username input is reduced from half the form width
 to a compact field. The password field remains beside it. A localized
 `Generation history` button occupies the newly available right-hand area.
 
-Selecting the history button opens a modal history window. It shows entries in
-reverse chronological order with time, server, port, username, private-key
-path, and result. The window provides a localized clear-history command with
-confirmation.
+Selecting the history button opens a modal history window. It shows successful
+entries in reverse chronological order with their completion time and exact
+multiline Codex connection details. Selecting an entry and pressing `Copy`
+places its original text on the clipboard. The window provides a localized
+clear-history command with confirmation.
 
 ## Persistence and Privacy
 
 The application stores history as JSON at a per-user path beneath
 `Environment.SpecialFolder.LocalApplicationData`. The history store creates
 the directory when needed and tolerates a missing history file. It writes an
-entry after every completed setup attempt, including validation and unexpected
-failures.
+entry only after a successful setup produces the displayed connection details.
+Failures, cancellations, and unexpected exceptions do not create an entry.
 
 Each record contains only:
 
 - UTC completion timestamp
-- Server host and port
-- Username
-- Private-key destination path
-- Success, cancelled, or failed outcome
+- The formatted Codex connection-details text
 
-Passwords, private-key bytes, public-key bytes, connection details, and full
-exception output are never persisted. The UI continues to clear the password
-box after an attempt.
+Passwords, private-key bytes, public-key bytes, raw process output, and full
+exception output are never persisted. The formatted connection text includes
+only the same server, port, username, authentication method, and private-key
+path already shown in the main form.
 
 ## Components
 
@@ -49,13 +48,13 @@ provides append, read, and clear operations. `JsonGenerationHistoryStore`
 owns path resolution, serialization, malformed-file recovery, sorting, and a
 bounded maximum entry count.
 
-`Form1` owns only presentation behavior: it opens the folder picker, builds
-history entries from completed runs, and opens the history dialog. The dialog
-receives the store abstraction and renders localized table headings and result
-labels.
+`Form1` owns presentation behavior: it opens the folder picker, records the
+already rendered connection text only after success, and opens the history
+dialog. The dialog receives the store abstraction, renders selected text, and
+copies it exactly.
 
-`UiText` gains labels for browsing, history, history columns, result states,
-empty history, and clear-history confirmation in Chinese and English.
+`UiText` gains labels for browsing, history, copying a selected entry, empty
+history, and clear-history confirmation in Chinese and English.
 
 ## Error Handling
 

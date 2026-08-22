@@ -1,139 +1,170 @@
 using SshKeySetupTool.History;
+using System.Runtime.InteropServices;
 
 namespace SshKeySetupTool.Presentation;
 
-public sealed class GenerationHistoryForm : Form
+internal sealed class GenerationHistoryForm : Form
 {
-    private readonly IGenerationHistoryStore _store;
+    private readonly IGenerationHistoryStore _historyStore;
     private readonly UiText _text;
-    private readonly DataGridView _historyGrid;
+    private readonly ListBox _historyListBox;
+    private readonly TextBox _connectionDetailsTextBox;
     private readonly Label _emptyLabel;
 
-    public GenerationHistoryForm(IGenerationHistoryStore store, UiLanguage language)
+    internal GenerationHistoryForm(IGenerationHistoryStore historyStore, UiLanguage language)
     {
-        _store = store ?? throw new ArgumentNullException(nameof(store));
+        _historyStore = historyStore ?? throw new ArgumentNullException(nameof(historyStore));
         _text = UiTextCatalog.For(language);
 
         Text = _text.GenerationHistory;
-        ClientSize = new Size(780, 360);
+        ClientSize = new Size(680, 500);
         MinimumSize = Size;
+        MaximumSize = Size;
         StartPosition = FormStartPosition.CenterParent;
+        FormBorderStyle = FormBorderStyle.FixedDialog;
+        MaximizeBox = false;
+        MinimizeBox = false;
         BackColor = Color.FromArgb(11, 17, 24);
+        ForeColor = Color.FromArgb(233, 245, 250);
+        Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
 
-        _historyGrid = new DataGridView
+        _historyListBox = new ListBox
         {
-            Name = "historyGrid",
+            Name = "historyListBox",
             Location = new Point(16, 16),
-            Size = new Size(748, 276),
-            ReadOnly = true,
-            AllowUserToAddRows = false,
-            AllowUserToDeleteRows = false,
-            AllowUserToResizeRows = false,
-            AutoGenerateColumns = false,
-            AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-            BackgroundColor = Color.FromArgb(14, 24, 34),
+            Size = new Size(648, 150),
+            BackColor = Color.FromArgb(14, 24, 34),
+            ForeColor = ForeColor,
             BorderStyle = BorderStyle.FixedSingle,
-            ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
-            {
-                BackColor = Color.FromArgb(16, 27, 38),
-                ForeColor = Color.FromArgb(233, 245, 250)
-            },
-            DefaultCellStyle = new DataGridViewCellStyle
-            {
-                BackColor = Color.FromArgb(14, 24, 34),
-                ForeColor = Color.FromArgb(233, 245, 250),
-                SelectionBackColor = Color.FromArgb(38, 55, 71)
-            },
-            EnableHeadersVisualStyles = false,
-            RowHeadersVisible = false,
-            SelectionMode = DataGridViewSelectionMode.FullRowSelect
+            DisplayMember = nameof(HistoryListItem.DisplayText)
         };
-        AddColumns();
+        _historyListBox.SelectedIndexChanged += historyListBox_SelectedIndexChanged;
+
+        _connectionDetailsTextBox = new TextBox
+        {
+            Name = "historyConnectionDetailsTextBox",
+            Location = new Point(16, 182),
+            Size = new Size(648, 246),
+            Multiline = true,
+            ReadOnly = true,
+            ScrollBars = ScrollBars.Vertical,
+            BackColor = Color.FromArgb(14, 24, 34),
+            ForeColor = ForeColor,
+            BorderStyle = BorderStyle.FixedSingle
+        };
 
         _emptyLabel = new Label
         {
-            AutoSize = true,
-            ForeColor = Color.FromArgb(127, 149, 163),
-            Location = new Point(16, 306),
-            Text = _text.HistoryEmpty
+            Name = "historyEmptyLabel",
+            Location = new Point(16, 182),
+            Size = new Size(648, 32),
+            Text = _text.HistoryEmpty,
+            TextAlign = ContentAlignment.MiddleCenter,
+            Visible = false
         };
+
+        CopyButton = new Button
+        {
+            Name = "copyHistoryEntryButton",
+            Text = _text.CopyHistoryEntry,
+            Location = new Point(468, 444),
+            Size = new Size(94, 36),
+            Enabled = false
+        };
+        CopyButton.Click += copyHistoryEntryButton_Click;
 
         var clearButton = new Button
         {
-            AutoSize = true,
-            BackColor = Color.FromArgb(38, 55, 71),
-            FlatStyle = FlatStyle.Flat,
-            ForeColor = Color.FromArgb(233, 245, 250),
-            Location = new Point(648, 304),
-            Text = _text.ClearHistory
+            Name = "clearHistoryButton",
+            Text = _text.ClearHistory,
+            Location = new Point(570, 444),
+            Size = new Size(94, 36)
         };
-        clearButton.FlatAppearance.BorderSize = 0;
-        clearButton.Click += clearButton_Click;
+        clearButton.Click += clearHistoryButton_Click;
 
-        Controls.Add(_historyGrid);
+        Controls.Add(_historyListBox);
+        Controls.Add(_connectionDetailsTextBox);
         Controls.Add(_emptyLabel);
+        Controls.Add(CopyButton);
         Controls.Add(clearButton);
-        RefreshHistory();
+
+        LoadHistory();
     }
 
-    private void AddColumns()
-    {
-        _historyGrid.Columns.Add("time", _text.HistoryTime);
-        _historyGrid.Columns.Add("host", _text.HistoryHost);
-        _historyGrid.Columns.Add("port", _text.HistoryPort);
-        _historyGrid.Columns.Add("username", _text.HistoryUsername);
-        _historyGrid.Columns.Add("privateKeyPath", _text.HistoryPrivateKeyPath);
-        _historyGrid.Columns.Add("result", _text.HistoryResult);
-    }
+    internal Button CopyButton { get; }
 
-    private void RefreshHistory()
+    internal string SelectedConnectionDetails => _connectionDetailsTextBox.Text;
+
+    private void LoadHistory()
     {
-        _historyGrid.Rows.Clear();
-        foreach (var entry in _store.Read())
+        _historyListBox.BeginUpdate();
+        try
         {
-            _historyGrid.Rows.Add(
-                entry.CompletedAtUtc.LocalDateTime.ToString("yyyy-MM-dd HH:mm:ss"),
-                entry.Host,
-                entry.Port,
-                entry.Username,
-                entry.PrivateKeyPath,
-                OutcomeText(entry.Outcome));
+            _historyListBox.Items.Clear();
+            foreach (var entry in _historyStore.Read())
+            {
+                _historyListBox.Items.Add(new HistoryListItem(entry, _text.HistoryCompletedAt));
+            }
+        }
+        finally
+        {
+            _historyListBox.EndUpdate();
         }
 
-        _emptyLabel.Visible = _historyGrid.Rows.Count == 0;
+        var hasEntries = _historyListBox.Items.Count > 0;
+        _historyListBox.Visible = hasEntries;
+        _connectionDetailsTextBox.Visible = hasEntries;
+        _emptyLabel.Visible = !hasEntries;
+        CopyButton.Enabled = hasEntries;
+        _connectionDetailsTextBox.Clear();
+        if (hasEntries)
+        {
+            _historyListBox.SelectedIndex = 0;
+        }
     }
 
-    private string OutcomeText(GenerationHistoryOutcome outcome) => outcome switch
+    private void historyListBox_SelectedIndexChanged(object? sender, EventArgs e)
     {
-        GenerationHistoryOutcome.Succeeded => _text.HistorySucceeded,
-        GenerationHistoryOutcome.Cancelled => _text.HistoryCancelled,
-        _ => _text.HistoryFailed
-    };
+        _connectionDetailsTextBox.Text = _historyListBox.SelectedItem is HistoryListItem item
+            ? item.Entry.ConnectionDetails
+            : string.Empty;
+        CopyButton.Enabled = _connectionDetailsTextBox.TextLength > 0;
+    }
 
-    private void clearButton_Click(object? sender, EventArgs e)
+    private void copyHistoryEntryButton_Click(object? sender, EventArgs e)
+    {
+        if (string.IsNullOrEmpty(_connectionDetailsTextBox.Text))
+        {
+            return;
+        }
+
+        try
+        {
+            Clipboard.SetText(_connectionDetailsTextBox.Text);
+        }
+        catch (ExternalException)
+        {
+        }
+    }
+
+    private void clearHistoryButton_Click(object? sender, EventArgs e)
     {
         if (MessageBox.Show(
                 this,
                 _text.ClearHistoryConfirmation,
-                _text.GenerationHistory,
-                MessageBoxButtons.OKCancel,
-                MessageBoxIcon.Warning,
-                MessageBoxDefaultButton.Button2) != DialogResult.OK)
+                _text.ClearHistoryTitle,
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning) != DialogResult.Yes)
         {
             return;
         }
 
-        if (!_store.Clear())
-        {
-            MessageBox.Show(
-                this,
-                _text.HistoryClearFailed,
-                _text.GenerationHistory,
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Error);
-            return;
-        }
+        _historyStore.Clear();
+        LoadHistory();
+    }
 
-        RefreshHistory();
+    private sealed record HistoryListItem(GenerationHistoryEntry Entry, string CompletedAtLabel)
+    {
+        public string DisplayText => $"{CompletedAtLabel}: {Entry.CompletedAtUtc.LocalDateTime:g}";
     }
 }

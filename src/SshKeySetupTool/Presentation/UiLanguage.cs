@@ -55,7 +55,10 @@ public sealed record UiText(
     string HistoryResult,
     string HistorySucceeded,
     string HistoryFailed,
-    string HistoryCancelled)
+    string HistoryCancelled,
+    string CopyHistoryEntry,
+    string HistoryCompletedAt,
+    string ClearHistoryTitle)
 {
     public string FailureLabel(SetupFailureKind kind) => kind switch
     {
@@ -129,7 +132,10 @@ public static class UiTextCatalog
             "Result",
             "Succeeded",
             "Failed",
-            "Cancelled" )
+            "Cancelled",
+            "Copy",
+            "Completed",
+            "Clear generation history" )
         : new UiText(
             "中文",
             "SSHKEY   //   SSH密钥设置",
@@ -177,5 +183,8 @@ public static class UiTextCatalog
             "结果",
             "成功",
             "失败",
-            "已取消");
+            "已取消",
+            "复制",
+            "生成时间",
+            "清除生成历史");
 }

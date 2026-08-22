@@ -129,12 +129,12 @@ public partial class Form1 : Form
             {
                 var connectionDetails = CodexConnectionDetails.Format(request, result.PrivateKeyPath!);
                 connectionDetailsTextBox.Text = connectionDetails;
+                RecordSuccessfulConnection(connectionDetails);
                 SetLocalizedStatus(
                     TryCopyToClipboard(connectionDetails)
                         ? text => text.CompletedCopied
                         : text => text.CompletedNotCopied,
                     SuccessColor);
-                RecordHistory(request, GenerationHistoryOutcome.Succeeded);
             }
             else
             {
@@ -142,18 +142,15 @@ public partial class Form1 : Form
                 SetLocalizedStatus(
                     text => FormatFailure(text, result),
                     ErrorColor);
-                RecordHistory(request, GenerationHistoryOutcome.Failed);
             }
         }
         catch (OperationCanceledException)
         {
             SetLocalizedStatus(text => text.Cancelled, Color.FromArgb(127, 149, 163));
-            RecordHistory(request, GenerationHistoryOutcome.Cancelled);
         }
         catch (Exception exception)
         {
             SetLocalizedStatus(text => text.FailedPrefix + exception.Message, ErrorColor);
-            RecordHistory(request, GenerationHistoryOutcome.Failed);
         }
         finally
         {
@@ -490,19 +487,13 @@ public partial class Form1 : Form
         passwordTextBox.Text,
         privateKeyPathTextBox.Text);
 
-    private void RecordHistory(
-        SetupRequest request,
-        GenerationHistoryOutcome outcome)
+    private void RecordSuccessfulConnection(string connectionDetails)
     {
         try
         {
             _generationHistoryStore.Append(new GenerationHistoryEntry(
                 DateTimeOffset.UtcNow,
-                request.Host,
-                request.Port,
-                request.Username,
-                request.PrivateKeyPath,
-                outcome));
+                connectionDetails));
         }
         catch
         {

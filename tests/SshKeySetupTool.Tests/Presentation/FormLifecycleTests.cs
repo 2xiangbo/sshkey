@@ -156,7 +156,7 @@ public sealed class FormLifecycleTests
     }
 
     [Fact]
-    public void SuccessfulSetup_RecordsOnlySafeGenerationHistoryFields()
+    public void SuccessfulSetup_PersistsTheSameConnectionDetailsShownInTheForm()
     {
         RunInSta(() =>
         {
@@ -172,10 +172,8 @@ public sealed class FormLifecycleTests
             Find<Button>(form, "generateButton").PerformClick();
             PumpUntil(() => history.Entries.Count == 1);
 
-            var entry = Assert.Single(history.Entries);
-            Assert.Equal(GenerationHistoryOutcome.Succeeded, entry.Outcome);
-            Assert.Equal("203.0.113.10", entry.Host);
-            Assert.Equal("root", entry.Username);
+            var shownDetails = Find<TextBox>(form, "connectionDetailsTextBox").Text;
+            Assert.Equal(shownDetails, Assert.Single(history.Entries).ConnectionDetails);
             Assert.DoesNotContain(
                 typeof(GenerationHistoryEntry).GetProperties(),
                 property => property.Name.Contains("password", StringComparison.OrdinalIgnoreCase));
@@ -183,7 +181,7 @@ public sealed class FormLifecycleTests
     }
 
     [Fact]
-    public void FailedSetup_RecordsFailedGenerationHistory()
+    public void FailedSetup_DoesNotPersistHistory()
     {
         RunInSta(() =>
         {
@@ -197,9 +195,9 @@ public sealed class FormLifecycleTests
             form.Show();
 
             Find<Button>(form, "generateButton").PerformClick();
-            PumpUntil(() => history.Entries.Count == 1);
+            PumpUntil(() => Find<Button>(form, "generateButton").Enabled);
 
-            Assert.Equal(GenerationHistoryOutcome.Failed, Assert.Single(history.Entries).Outcome);
+            Assert.Empty(history.Entries);
         });
     }
 
@@ -414,10 +412,6 @@ public sealed class FormLifecycleTests
 
         public void Append(GenerationHistoryEntry entry) => Entries.Add(entry);
 
-        public bool Clear()
-        {
-            Entries.Clear();
-            return true;
-        }
+        public void Clear() => Entries.Clear();
     }
 }

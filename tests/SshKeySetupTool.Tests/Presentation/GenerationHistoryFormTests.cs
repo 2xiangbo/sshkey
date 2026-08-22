@@ -1,37 +1,26 @@
-using System.Runtime.ExceptionServices;
-using System.Windows.Forms;
 using SshKeySetupTool.History;
 using SshKeySetupTool.Presentation;
+using System.Runtime.ExceptionServices;
+using System.Windows.Forms;
 
 namespace SshKeySetupTool.Tests.Presentation;
 
 public sealed class GenerationHistoryFormTests
 {
     [Fact]
-    public void Form_UsesChineseTitleAndColumnHeaders()
+    public void HistoryForm_UsesChineseCopyButtonAndShowsSelectedConnectionDetails()
     {
         RunInSta(() =>
         {
-            var store = new InMemoryHistoryStore();
-            store.Append(new(
-                DateTimeOffset.UtcNow,
-                "203.0.113.5",
-                22,
-                "root",
-                @"D:\keys\id_ed25519_codex",
-                GenerationHistoryOutcome.Succeeded));
+            const string connectionDetails = "服务器地址：example.com\r\n私钥路径：C:\\keys\\id_ed25519";
+            var store = new InMemoryHistoryStore([
+                new GenerationHistoryEntry(DateTimeOffset.Parse("2026-08-19T09:00:00Z"), connectionDetails)]);
 
             using var form = new GenerationHistoryForm(store, UiLanguage.Chinese);
-            var grid = Assert.IsType<DataGridView>(
-                Assert.Single(form.Controls.Find("historyGrid", searchAllChildren: true)));
 
             Assert.Equal("生成历史", form.Text);
-            Assert.Contains("服务器", grid.Columns.Cast<DataGridViewColumn>()
-                .Select(column => column.HeaderText));
-            Assert.DoesNotContain("说明", grid.Columns.Cast<DataGridViewColumn>()
-                .Select(column => column.HeaderText));
-            Assert.Contains("成功", grid.Rows.Cast<DataGridViewRow>()
-                .Select(row => row.Cells[5].Value));
+            Assert.Equal("复制", form.CopyButton.Text);
+            Assert.Equal(connectionDetails, form.SelectedConnectionDetails);
         });
     }
 
@@ -49,7 +38,6 @@ public sealed class GenerationHistoryFormTests
                 exception = caught;
             }
         });
-
         thread.SetApartmentState(ApartmentState.STA);
         thread.Start();
         thread.Join();
@@ -62,16 +50,17 @@ public sealed class GenerationHistoryFormTests
 
     private sealed class InMemoryHistoryStore : IGenerationHistoryStore
     {
-        private readonly List<GenerationHistoryEntry> _entries = [];
+        private readonly List<GenerationHistoryEntry> _entries;
+
+        public InMemoryHistoryStore(IEnumerable<GenerationHistoryEntry> entries)
+        {
+            _entries = entries.ToList();
+        }
 
         public IReadOnlyList<GenerationHistoryEntry> Read() => _entries;
 
         public void Append(GenerationHistoryEntry entry) => _entries.Add(entry);
 
-        public bool Clear()
-        {
-            _entries.Clear();
-            return true;
-        }
+        public void Clear() => _entries.Clear();
     }
 }

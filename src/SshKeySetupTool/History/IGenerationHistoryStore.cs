@@ -6,5 +6,5 @@ public interface IGenerationHistoryStore
 
     void Append(GenerationHistoryEntry entry);
 
-    bool Clear();
+    void Clear();
 }

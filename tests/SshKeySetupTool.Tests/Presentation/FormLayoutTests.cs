@@ -20,6 +20,7 @@ public sealed class FormLayoutTests
             var connectionDetails = Find<TextBox>(form, "connectionDetailsTextBox");
             var connectionDetailsLabel = Find<Label>(form, "connectionDetailsLabel");
             var generate = Find<Button>(form, "generateButton");
+            var history = Find<Button>(form, "generationHistoryButton");
             var titleBar = Find<Panel>(form, "titleBarPanel");
             var minimize = Find<Button>(form, "minimizeButton");
             var close = Find<Button>(form, "closeButton");
@@ -54,6 +55,7 @@ public sealed class FormLayoutTests
             Assert.Equal(42, titleBar.Height);
             Assert.Equal(Color.FromArgb(11, 17, 24), form.BackColor);
             Assert.Equal(Color.FromArgb(56, 215, 255), generate.BackColor);
+            Assert.True(history.Right <= form.ClientSize.Width - 20);
             Assert.Equal(FlatStyle.Flat, minimize.FlatStyle);
             Assert.Equal(FlatStyle.Flat, close.FlatStyle);
             Assert.True(form.Height < 560);

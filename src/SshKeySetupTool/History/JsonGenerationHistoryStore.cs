@@ -4,43 +4,51 @@ namespace SshKeySetupTool.History;
 
 public sealed class JsonGenerationHistoryStore : IGenerationHistoryStore
 {
-    private const int MaximumEntryCount = 100;
-    private readonly string _historyPath;
-
-    public JsonGenerationHistoryStore(string historyPath)
+    private const int MaximumEntries = 100;
+    private static readonly JsonSerializerOptions SerializerOptions = new()
     {
-        _historyPath = historyPath ?? throw new ArgumentNullException(nameof(historyPath));
+        WriteIndented = true
+    };
+
+    private readonly string _historyFilePath;
+
+    public JsonGenerationHistoryStore(string historyFilePath)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(historyFilePath);
+        _historyFilePath = historyFilePath;
     }
 
     public static JsonGenerationHistoryStore CreateDefault()
     {
-        var directory = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "SSHKEY");
-        return new JsonGenerationHistoryStore(Path.Combine(directory, "generation-history.json"));
+        var localApplicationData = Environment.GetFolderPath(
+            Environment.SpecialFolder.LocalApplicationData);
+        return new JsonGenerationHistoryStore(Path.Combine(
+            localApplicationData,
+            "SSHKEY",
+            "generation-history.json"));
     }
 
     public IReadOnlyList<GenerationHistoryEntry> Read()
     {
-        if (!File.Exists(_historyPath))
-        {
-            return [];
-        }
-
         try
         {
+            if (!File.Exists(_historyFilePath))
+            {
+                return [];
+            }
+
             var entries = JsonSerializer.Deserialize<List<GenerationHistoryEntry>>(
-                File.ReadAllText(_historyPath));
+                File.ReadAllText(_historyFilePath),
+                SerializerOptions);
             return (entries ?? [])
                 .OrderByDescending(entry => entry.CompletedAtUtc)
-                .Take(MaximumEntryCount)
                 .ToArray();
         }
-        catch (JsonException)
+        catch (IOException)
         {
             return [];
         }
-        catch (IOException)
+        catch (JsonException)
         {
             return [];
         }
@@ -54,37 +62,27 @@ public sealed class JsonGenerationHistoryStore : IGenerationHistoryStore
     {
         ArgumentNullException.ThrowIfNull(entry);
 
-        var entries = Read().Append(entry)
-            .OrderByDescending(item => item.CompletedAtUtc)
-            .Take(MaximumEntryCount)
+        var entries = Read()
+            .Append(entry)
+            .OrderByDescending(historyEntry => historyEntry.CompletedAtUtc)
+            .Take(MaximumEntries)
             .ToArray();
-        var directory = Path.GetDirectoryName(_historyPath);
+        var directory = Path.GetDirectoryName(_historyFilePath);
         if (!string.IsNullOrEmpty(directory))
         {
             Directory.CreateDirectory(directory);
         }
 
-        File.WriteAllText(_historyPath, JsonSerializer.Serialize(entries));
+        File.WriteAllText(
+            _historyFilePath,
+            JsonSerializer.Serialize(entries, SerializerOptions));
     }
 
-    public bool Clear()
+    public void Clear()
     {
-        try
+        if (File.Exists(_historyFilePath))
         {
-            if (File.Exists(_historyPath))
-            {
-                File.Delete(_historyPath);
-            }
-
-            return true;
-        }
-        catch (IOException)
-        {
-            return false;
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return false;
+            File.Delete(_historyFilePath);
         }
     }
 }

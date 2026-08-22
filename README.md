@@ -41,7 +41,7 @@ administrator-required result instead of an automatic mutation.
 - Idempotent public-key installation in `authorized_keys`
 - Key-based login verification
 - Ready-to-copy connection details for AI coding tools
-- Local generation history with server, account, key destination, and result
+- Local history of successful connection details with one-click recopy
 - Standalone Windows executable; no Python installation required
 
 ### Works With
@@ -68,9 +68,9 @@ Aider, OpenCode, Qwen Code, Kiro, Zed, and other SSH-capable AI coding tools.
    leave the server unchanged.
 7. Copy the generated connection details into your AI coding tool.
 
-Select **Generation history** to review prior attempts. History records the
-time, server, port, username, private-key destination, and generic result only.
-Passwords, private-key contents, and connection details are never saved.
+Select **Generation history** to review successful generated connection details
+and copy any prior result again. History stores the completion time and the
+displayed connection text, never passwords or key material.
 
 The password is used only for the initial SSH connection and is cleared from
 the window after the operation. It is not saved to disk.
@@ -107,7 +107,7 @@ SSHKEY 是一款轻量、易用的 Windows SSH 密钥配置工具，可帮助用
 - 幂等写入服务器的 `authorized_keys`
 - 自动验证密钥登录
 - 生成适用于 AI 编程工具的连接信息
-- 本地保存生成历史，便于查看服务器、账号、私钥路径和结果
+- 保存成功连接信息历史，可一键重新复制
 - 独立 Windows EXE，无需安装 Python
 
 ### 适用工具
@@ -130,7 +130,7 @@ SSHKEY 是一款轻量、易用的 Windows SSH 密钥配置工具，可帮助用
    或点击**取消**保持服务器不变。
 7. 将生成的连接信息复制到 AI 编程工具中。
 
-点击**生成历史**可查看之前的操作。历史只记录时间、服务器、端口、账号、私钥保存路径和通用结果；不会保存密码、私钥内容或连接信息。
+点击**生成历史**可查看此前成功生成的连接信息，并选择任意记录再次复制。历史仅保存生成时间和界面显示的连接文本，不保存密码或密钥内容。
 
 密码仅用于首次 SSH 连接，操作完成后会从窗口中清空，不会保存到磁盘。
 
