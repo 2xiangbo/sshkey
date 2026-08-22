@@ -84,7 +84,12 @@ dotnet test .\SshKeySetupTool.sln -c Release
 powershell -ExecutionPolicy Bypass -File .\scripts\publish.ps1
 ```
 
-The standalone executable is created in `outputs\`.
+The publish script creates two Windows x64 executables in `outputs\`:
+
+- `SSHKEY-minimal-win-x64.exe` is the smallest package and requires the .NET 8
+  Desktop Runtime.
+- `SSHKEY-net8-win-x64.exe` includes the .NET 8 runtime and runs without a
+  separate runtime installation.
 
 ## 中文
 
@@ -143,4 +148,7 @@ dotnet test .\SshKeySetupTool.sln -c Release
 powershell -ExecutionPolicy Bypass -File .\scripts\publish.ps1
 ```
 
-生成的独立 EXE 位于 `outputs\` 目录。
+发布脚本会在 `outputs\` 目录生成两个 Windows x64 EXE：
+
+- `SSHKEY-minimal-win-x64.exe` 是最小版，需要已安装 .NET 8 Desktop Runtime。
+- `SSHKEY-net8-win-x64.exe` 包含 .NET 8 运行时，无需额外安装即可运行。
