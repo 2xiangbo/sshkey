@@ -12,15 +12,35 @@ public sealed class GenerationHistoryFormTests
     {
         RunInSta(() =>
         {
-            const string connectionDetails = "服务器地址：example.com\r\n私钥路径：C:\\keys\\id_ed25519";
+            const string connectionDetails = "ssh -p 22 -i \"C:\\keys\\id_ed25519\" root@example.com";
             var store = new InMemoryHistoryStore([
-                new GenerationHistoryEntry(DateTimeOffset.Parse("2026-08-19T09:00:00Z"), connectionDetails)]);
+                new GenerationHistoryEntry(DateTimeOffset.Parse("2026-08-19T09:00:00Z"), connectionDetails, "example.com")]);
 
             using var form = new GenerationHistoryForm(store, UiLanguage.Chinese);
 
             Assert.Equal("生成历史", form.Text);
             Assert.Equal("复制", form.CopyButton.Text);
             Assert.Equal(connectionDetails, form.SelectedConnectionDetails);
+            var historyList = Assert.IsType<ListBox>(form.Controls["historyListBox"]);
+            Assert.Contains("服务器: example.com", historyList.GetItemText(historyList.Items[0]));
+        });
+    }
+
+    [Fact]
+    public void HistoryForm_KeepsLegacyEntriesWithoutHostReadable()
+    {
+        RunInSta(() =>
+        {
+            var store = new InMemoryHistoryStore([
+                new GenerationHistoryEntry(
+                    DateTimeOffset.Parse("2026-08-19T09:00:00Z"),
+                    "ssh -p 22 -i \"C:\\keys\\id_ed25519\" root@example.com")]);
+
+            using var form = new GenerationHistoryForm(store, UiLanguage.Chinese);
+
+            var historyList = Assert.IsType<ListBox>(form.Controls["historyListBox"]);
+            Assert.Contains("生成时间:", historyList.GetItemText(historyList.Items[0]));
+            Assert.DoesNotContain("    ", historyList.GetItemText(historyList.Items[0]));
         });
     }
 

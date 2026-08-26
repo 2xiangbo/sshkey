@@ -103,7 +103,10 @@ internal sealed class GenerationHistoryForm : Form
             _historyListBox.Items.Clear();
             foreach (var entry in _historyStore.Read())
             {
-                _historyListBox.Items.Add(new HistoryListItem(entry, _text.HistoryCompletedAt));
+                _historyListBox.Items.Add(new HistoryListItem(
+                    entry,
+                    _text.HistoryCompletedAt,
+                    _text.HistoryHost));
             }
         }
         finally
@@ -163,8 +166,13 @@ internal sealed class GenerationHistoryForm : Form
         LoadHistory();
     }
 
-    private sealed record HistoryListItem(GenerationHistoryEntry Entry, string CompletedAtLabel)
+    private sealed record HistoryListItem(
+        GenerationHistoryEntry Entry,
+        string CompletedAtLabel,
+        string HostLabel)
     {
-        public string DisplayText => $"{CompletedAtLabel}: {Entry.CompletedAtUtc.LocalDateTime:g}";
+        public string DisplayText => string.IsNullOrWhiteSpace(Entry.Host)
+            ? $"{CompletedAtLabel}: {Entry.CompletedAtUtc.LocalDateTime:g}"
+            : $"{CompletedAtLabel}: {Entry.CompletedAtUtc.LocalDateTime:g}    {HostLabel}: {Entry.Host}";
     }
 }

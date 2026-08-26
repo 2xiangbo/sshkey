@@ -173,7 +173,9 @@ public sealed class FormLifecycleTests
             PumpUntil(() => history.Entries.Count == 1);
 
             var shownDetails = Find<TextBox>(form, "connectionDetailsTextBox").Text;
-            Assert.Equal(shownDetails, Assert.Single(history.Entries).ConnectionDetails);
+            var entry = Assert.Single(history.Entries);
+            Assert.Equal(shownDetails, entry.ConnectionDetails);
+            Assert.Equal("203.0.113.10", entry.Host);
             Assert.DoesNotContain(
                 typeof(GenerationHistoryEntry).GetProperties(),
                 property => property.Name.Contains("password", StringComparison.OrdinalIgnoreCase));

@@ -45,7 +45,7 @@ public sealed class FormLayoutTests
                 UiTextCatalog.For(UiLanguage.English).CompletedNotCopied
             }.MaxBy(text => text.Length)!;
 
-            Assert.Equal(new Size(680, 520), form.ClientSize);
+            Assert.Equal(new Size(680, 488), form.ClientSize);
             Assert.Equal("SSHKEY   //   SSH密钥设置", form.Text);
             Assert.Equal(form.Text, headerTitle.Text);
             Assert.Equal("中文", language.SelectedItem);
@@ -83,6 +83,7 @@ public sealed class FormLayoutTests
             Assert.True(usernameInput.Width < passwordInput.Width);
             Assert.True(generationHistory.Left > passwordInput.Right);
             Assert.True(privateKeyPathInput.Top > usernameInput.Bottom);
+            Assert.True(connectionDetails.Top - privateKeyPathInput.Bottom <= 110);
             Assert.True(browsePrivateKeyPath.Left > privateKeyPathInput.Right);
             Assert.True(browsePrivateKeyPath.Right <= form.ClientSize.Width - 20);
             Assert.True(statusInput.Left > connectionDetailsLabel.Right);

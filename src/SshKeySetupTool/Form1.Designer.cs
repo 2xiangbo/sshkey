@@ -199,7 +199,7 @@ partial class Form1
         connectionDetailsLabel.AutoSize = true;
         connectionDetailsLabel.Font = new Font("Segoe UI", 8.5F, FontStyle.Regular, GraphicsUnit.Point);
         connectionDetailsLabel.ForeColor = secondaryTextColor;
-        connectionDetailsLabel.Location = new Point(20, 288);
+        connectionDetailsLabel.Location = new Point(20, 256);
         connectionDetailsLabel.Name = "connectionDetailsLabel";
         connectionDetailsLabel.Size = new Size(83, 15);
         connectionDetailsLabel.TabIndex = 8;
@@ -283,7 +283,7 @@ partial class Form1
         connectionDetailsTextBox.BorderStyle = BorderStyle.FixedSingle;
         connectionDetailsTextBox.Font = new Font("Consolas", 9.5F, FontStyle.Regular, GraphicsUnit.Point);
         connectionDetailsTextBox.ForeColor = primaryTextColor;
-        connectionDetailsTextBox.Location = new Point(20, 350);
+        connectionDetailsTextBox.Location = new Point(20, 318);
         connectionDetailsTextBox.Multiline = true;
         connectionDetailsTextBox.Name = "connectionDetailsTextBox";
         connectionDetailsTextBox.ReadOnly = true;
@@ -363,7 +363,7 @@ partial class Form1
         statusInputPanel.BackColor = inputBackColor;
         statusInputPanel.BorderStyle = BorderStyle.FixedSingle;
         statusInputPanel.Controls.Add(statusTextBox);
-        statusInputPanel.Location = new Point(250, 285);
+        statusInputPanel.Location = new Point(250, 253);
         statusInputPanel.Name = "statusInputPanel";
         statusInputPanel.Padding = new Padding(1);
         statusInputPanel.Size = new Size(410, 56);
@@ -380,7 +380,7 @@ partial class Form1
         generateButton.FlatStyle = FlatStyle.Flat;
         generateButton.Font = new Font("Segoe UI Semibold", 10F, FontStyle.Bold, GraphicsUnit.Point);
         generateButton.ForeColor = Color.FromArgb(4, 25, 34);
-        generateButton.Location = new Point(440, 458);
+        generateButton.Location = new Point(440, 426);
         generateButton.Name = "generateButton";
         generateButton.Size = new Size(220, 40);
         generateButton.TabIndex = 5;
@@ -429,7 +429,7 @@ partial class Form1
         languageComboBox.ForeColor = primaryTextColor;
         languageComboBox.FormattingEnabled = true;
         languageComboBox.Items.AddRange(new object[] { "\u4e2d\u6587", "EN" });
-        languageComboBox.Location = new Point(356, 465);
+        languageComboBox.Location = new Point(356, 433);
         languageComboBox.Name = "languageComboBox";
         languageComboBox.Size = new Size(70, 25);
         languageComboBox.TabIndex = 7;
@@ -452,7 +452,7 @@ partial class Form1
         projectLinkLabel.AutoSize = true;
         projectLinkLabel.Font = new Font("Segoe UI", 8.5F, FontStyle.Regular, GraphicsUnit.Point);
         projectLinkLabel.LinkColor = cyanColor;
-        projectLinkLabel.Location = new Point(20, 470);
+        projectLinkLabel.Location = new Point(20, 438);
         projectLinkLabel.Name = "projectLinkLabel";
         projectLinkLabel.Size = new Size(103, 15);
         projectLinkLabel.TabIndex = 8;
@@ -465,7 +465,7 @@ partial class Form1
         xxCodexLinkLabel.AutoSize = true;
         xxCodexLinkLabel.Font = new Font("Segoe UI", 8.5F, FontStyle.Regular, GraphicsUnit.Point);
         xxCodexLinkLabel.LinkColor = cyanColor;
-        xxCodexLinkLabel.Location = new Point(145, 470);
+        xxCodexLinkLabel.Location = new Point(145, 438);
         xxCodexLinkLabel.Name = "xxCodexLinkLabel";
         xxCodexLinkLabel.Size = new Size(54, 15);
         xxCodexLinkLabel.TabIndex = 9;
@@ -479,7 +479,7 @@ partial class Form1
         AutoScaleDimensions = new SizeF(7F, 17F);
         AutoScaleMode = AutoScaleMode.None;
         BackColor = Color.FromArgb(11, 17, 24);
-        ClientSize = new Size(680, 520);
+        ClientSize = new Size(680, 488);
         Controls.Add(xxCodexLinkLabel);
         Controls.Add(projectLinkLabel);
         Controls.Add(languageComboBox);

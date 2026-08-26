@@ -129,7 +129,7 @@ public partial class Form1 : Form
             {
                 var connectionDetails = CodexConnectionDetails.Format(request, result.PrivateKeyPath!);
                 connectionDetailsTextBox.Text = connectionDetails;
-                RecordSuccessfulConnection(connectionDetails);
+                RecordSuccessfulConnection(connectionDetails, request.Host);
                 SetLocalizedStatus(
                     TryCopyToClipboard(connectionDetails)
                         ? text => text.CompletedCopied
@@ -487,13 +487,14 @@ public partial class Form1 : Form
         passwordTextBox.Text,
         privateKeyPathTextBox.Text);
 
-    private void RecordSuccessfulConnection(string connectionDetails)
+    private void RecordSuccessfulConnection(string connectionDetails, string host)
     {
         try
         {
             _generationHistoryStore.Append(new GenerationHistoryEntry(
                 DateTimeOffset.UtcNow,
-                connectionDetails));
+                connectionDetails,
+                host));
         }
         catch
         {
