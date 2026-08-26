@@ -76,7 +76,7 @@ public sealed class KeySetupService : IKeySetupService
         {
             return new SetupResult(
                 false,
-                "Server SSH configuration inspection failed.",
+                FormatInspectionFailure(probe.RawOutput),
                 FailureKind: SetupFailureKind.ServerConfigurationInspection);
         }
 
@@ -278,6 +278,19 @@ public sealed class KeySetupService : IKeySetupService
             $"Remote backup: {backupPaths}. Original error: {originalErrorMessage}. " +
             $"Rollback error: {rollbackErrorMessage}",
             FailureKind: SetupFailureKind.Rollback);
+
+    private static string FormatInspectionFailure(string rawOutput)
+    {
+        var details = rawOutput.Trim();
+        if (details.Length > 1000)
+        {
+            details = details[..1000] + "...";
+        }
+
+        return string.IsNullOrEmpty(details)
+            ? "No effective pubkeyauthentication value was returned by sshd."
+            : details;
+    }
 
     private static string GetRemoteBackupPath(SshServerConfigurationChange change)
     {

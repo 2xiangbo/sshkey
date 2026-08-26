@@ -265,6 +265,15 @@ public sealed class WindowsOpenSshSetupClientTests
     }
 
     [Fact]
+    public void BuildProbe_EmitsDiagnosticWhenSshdCannotProduceEffectiveConfiguration()
+    {
+        var command = LinuxSshServerConfigurationCommand.BuildProbe();
+
+        Assert.Contains("SSHKEY_PROBE_ERROR", command, StringComparison.Ordinal);
+        Assert.Contains("2>&1", command, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task EnablePublicKeyAuthenticationAsync_ParsesOnlyOwnedSentinel()
     {
         var runner = new RecordingProcessRunner(_ =>

@@ -14,8 +14,17 @@ public static class LinuxSshServerConfigurationCommand
 set -eu
 sshd="$(command -v sshd 2>/dev/null || true)"
 [ -n "$sshd" ] || [ ! -x /usr/sbin/sshd ] || sshd=/usr/sbin/sshd
-[ -n "$sshd" ] || exit 41
-"$sshd" -T 2>/dev/null | awk 'tolower($1) == "pubkeyauthentication" { print; exit }'
+[ -n "$sshd" ] || { printf '%s\n' 'SSHKEY_PROBE_ERROR sshd executable was not found'; exit 41; }
+if ! probe_output="$("$sshd" -T 2>&1)"; then
+  printf '%s\n' "SSHKEY_PROBE_ERROR sshd -T failed: $probe_output"
+  exit 42
+fi
+pubkey_line="$(printf '%s\n' "$probe_output" | awk 'tolower($1) == "pubkeyauthentication" { print; exit }')"
+if [ -z "$pubkey_line" ]; then
+  printf '%s\n' "SSHKEY_PROBE_ERROR sshd -T returned no pubkeyauthentication value: $probe_output"
+  exit 42
+fi
+printf '%s\n' "$pubkey_line"
 """;
 
     public static string BuildApply(string operationId)

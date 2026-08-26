@@ -131,6 +131,26 @@ public sealed class KeySetupServiceTests
     }
 
     [Fact]
+    public async Task RunAsync_UnavailableProbe_IncludesProbeDiagnosticsInFailureMessage()
+    {
+        const string probeOutput = "SSHKEY_PROBE_ERROR sshd -T failed: missing privilege separation directory";
+        var sshClient = new FakeSshSetupClient
+        {
+            Probe = new(SshPublicKeyAuthenticationState.Unavailable, probeOutput)
+        };
+        var service = new KeySetupService(new FakeKeyMaterialFactory(), sshClient);
+
+        var result = await service.RunAsync(
+            CreateRequest("root"),
+            (_, _) => true,
+            null,
+            CancellationToken.None);
+
+        Assert.Equal(SetupFailureKind.ServerConfigurationInspection, result.FailureKind);
+        Assert.Contains("missing privilege separation directory", result.Message);
+    }
+
+    [Fact]
     public async Task RunAsync_InspectionTimeout_ReturnsInspectionFailure()
     {
         var sshClient = new FakeSshSetupClient
